@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "faytuna-emergent-flow"
+name = "DynamicTune"
 version = "0.1.0"
-description = "Model-independent emergent-flow transport and constrained weight surgery"
+description = "DynamicTune: cross-model hidden trajectory transport and constrained weight surgery"
 requires-python = ">=3.10"
 dependencies = ["numpy>=1.24"]
 
@@ -14,6 +14,7 @@ dev = ["pytest>=7"]
 torch = ["torch>=2.0"]
 
 [project.scripts]
+dynamictune = "faytuna_flow.cli:main"
 faytuna-flow = "faytuna_flow.cli:main"
 
 [tool.setuptools.packages.find]

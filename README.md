@@ -1,6 +1,6 @@
-# faytuna-emergent-flow
+# DynamicTune
 
-Cross-model hidden-state trajectory transport and direct weight surgery between language models of different sizes and hidden dimensions (tested on `Qwen3.5-4B -> Qwen3.5-0.8B` and `GPT-2 XL -> GPT-2 small`).
+**DynamicTune** is a library for cross-model hidden-state trajectory transport and direct weight surgery between language models of different sizes and hidden dimensions (tested on `Qwen3.5-4B -> Qwen3.5-0.8B` and `GPT-2 XL -> GPT-2 small`).
 
 Instead of running end-to-end KL distillation over millions of tokens, this library treats a transformer stack as a discrete dynamical system over depth, aligns teacher and student hidden manifolds via local orthogonal Procrustes charts, identifies which student layers can linearly absorb the teacher's trajectory delta without destroying existing polysemantic features, and writes bounded rank-constrained updates directly into the student's MLP projections.
 
