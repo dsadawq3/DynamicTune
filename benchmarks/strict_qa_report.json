@@ -1,0 +1,458 @@
+{
+  "base_model": "C:\\models\\Qwen3.5-0.8B-Base",
+  "transferred_model": "runs/qwen35_breakthrough_upgraded/transferred_student",
+  "comparisons": {
+    "history_and_facts": {
+      "base_nll": 1.235200808161781,
+      "trans_nll": 1.1700889184361412,
+      "base_ppl": 3.4390690445044614,
+      "trans_ppl": 3.222279145812877,
+      "delta_nll": -0.06511188972563975,
+      "pct_change": -5.271360680417535,
+      "status": "IMPROVED"
+    },
+    "science_and_medicine": {
+      "base_nll": 0.8517159564154488,
+      "trans_nll": 0.708966885294233,
+      "base_ppl": 2.343665030475105,
+      "trans_ppl": 2.0318909974582064,
+      "delta_nll": -0.14274907112121582,
+      "pct_change": -16.760173394190335,
+      "status": "IMPROVED"
+    },
+    "logic_and_reasoning": {
+      "base_nll": 2.0125343298039784,
+      "trans_nll": 1.8880593754896304,
+      "base_ppl": 7.482255842969482,
+      "trans_ppl": 6.606535428227481,
+      "delta_nll": -0.12447495431434796,
+      "pct_change": -6.184985392347164,
+      "status": "IMPROVED"
+    },
+    "russian_qa": {
+      "base_nll": 2.0805879456025584,
+      "trans_nll": 1.9352523000152022,
+      "base_ppl": 8.009176490359042,
+      "trans_ppl": 6.925791212193287,
+      "delta_nll": -0.14533564558735623,
+      "pct_change": -6.985316140782774,
+      "status": "IMPROVED"
+    },
+    "code_and_algorithms": {
+      "base_nll": 2.008279513928198,
+      "trans_nll": 2.6318125263337167,
+      "base_ppl": 7.45048785342116,
+      "trans_ppl": 13.898939278613637,
+      "delta_nll": 0.6235330124055185,
+      "pct_change": 31.048118953615518,
+      "status": "DEGRADED"
+    },
+    "global": {
+      "base_nll": 1.83474392868115,
+      "trans_nll": 1.8199562353380558,
+      "base_ppl": 6.263530029665106,
+      "trans_ppl": 6.1715883464954615,
+      "delta_nll": -0.014787693343094155,
+      "pct_change": -0.8059813204409315,
+      "status": "IMPROVED"
+    }
+  },
+  "base_results": {
+    "history_and_facts": {
+      "mean_nll": 1.235200808161781,
+      "ppl": 3.4390690445044614,
+      "total_target_tokens": 21,
+      "pairs": [
+        {
+          "question": "In what year was the Treaty of Westphalia signed, ending the Thirty Years' War in Europe?",
+          "answer": "1648.",
+          "nll": 0.7195912599563599,
+          "target_tokens": 5
+        },
+        {
+          "question": "What was the capital of the Byzantine Empire before its fall to the Ottoman Empire in 1453?",
+          "answer": "Constantinople.",
+          "nll": 1.047710657119751,
+          "target_tokens": 4
+        },
+        {
+          "question": "Who was the primary author of the United States Declaration of Independence in 1776?",
+          "answer": "Thomas Jefferson.",
+          "nll": 1.6695610284805298,
+          "target_tokens": 3
+        },
+        {
+          "question": "Which ancient civilization built the fortress city of Machu Picchu in Peru?",
+          "answer": "The Inca Empire.",
+          "nll": 1.2645395994186401,
+          "target_tokens": 5
+        },
+        {
+          "question": "The ancient Silk Road primarily connected Han Dynasty China with which major western empire?",
+          "answer": "The Roman Empire.",
+          "nll": 1.7047592401504517,
+          "target_tokens": 4
+        }
+      ]
+    },
+    "science_and_medicine": {
+      "mean_nll": 0.8517159564154488,
+      "ppl": 2.343665030475105,
+      "total_target_tokens": 21,
+      "pairs": [
+        {
+          "question": "Which pancreatic islet cells are responsible for the synthesis and secretion of insulin?",
+          "answer": "Beta cells.",
+          "nll": 1.3284322023391724,
+          "target_tokens": 3
+        },
+        {
+          "question": "What antibiotic substance was discovered in mold by Alexander Fleming in 1928?",
+          "answer": "Penicillin.",
+          "nll": 0.6008824706077576,
+          "target_tokens": 4
+        },
+        {
+          "question": "In molecular biology, which primary enzyme transcribes genetic information from DNA into messenger RNA?",
+          "answer": "RNA polymerase.",
+          "nll": 0.7065637111663818,
+          "target_tokens": 4
+        },
+        {
+          "question": "Which fundamental quantum mechanical principle states that one cannot simultaneously determine both the exact position and momentum of a subatomic particle?",
+          "answer": "Heisenberg uncertainty principle.",
+          "nll": 0.9868893623352051,
+          "target_tokens": 6
+        },
+        {
+          "question": "Which cellular organelle generates most of the chemical energy needed by eukaryotic cells via oxidative phosphorylation?",
+          "answer": "Mitochondria.",
+          "nll": 0.6874043941497803,
+          "target_tokens": 4
+        }
+      ]
+    },
+    "logic_and_reasoning": {
+      "mean_nll": 2.0125343298039784,
+      "ppl": 7.482255842969482,
+      "total_target_tokens": 82,
+      "pairs": [
+        {
+          "question": "If a rigid glass bottle filled completely to the top with liquid water is tightly sealed and frozen, why does the bottle shatter?",
+          "answer": "Because water expands as it crystallizes into ice, increasing pressure beyond the tensile strength of glass.",
+          "nll": 1.9715235233306885,
+          "target_tokens": 20
+        },
+        {
+          "question": "Why does an automobile risk hydroplaning when traveling at high speeds on a water-covered highway?",
+          "answer": "Because water pressure builds in front of the tire until a thin film separates the tire from the road surface, eliminating traction.",
+          "nll": 2.5072193145751953,
+          "target_tokens": 24
+        },
+        {
+          "question": "If severe drought cuts the global wheat harvest by half while consumer demand remains unchanged, what happens to the market price of bread?",
+          "answer": "The market price of bread increases significantly due to the reduced supply of wheat.",
+          "nll": 0.9352355599403381,
+          "target_tokens": 15
+        },
+        {
+          "question": "When a solid copper rod is heated uniformly, what happens to its physical length?",
+          "answer": "Its length increases due to thermal expansion.",
+          "nll": 1.2202601432800293,
+          "target_tokens": 8
+        },
+        {
+          "question": "Why does acoustic sound propagate significantly faster through solid steel than through air?",
+          "answer": "Because steel has much higher elastic stiffness and atomic density than compressible gas.",
+          "nll": 2.775564432144165,
+          "target_tokens": 15
+        }
+      ]
+    },
+    "russian_qa": {
+      "mean_nll": 2.0805879456025584,
+      "ppl": 8.009176490359042,
+      "total_target_tokens": 54,
+      "pairs": [
+        {
+          "question": "Какая фундаментальная математическая формула связывает операцию взятия первообразной с определённым интегралом?",
+          "answer": "Формула Ньютона — Лейбница.",
+          "nll": 1.9762330055236816,
+          "target_tokens": 12
+        },
+        {
+          "question": "В каком году и в какой научной статье исследователи из Google впервые представили архитектуру трансформеров?",
+          "answer": "В 2017 году в статье Attention Is All You Need.",
+          "nll": 1.805151104927063,
+          "target_tokens": 15
+        },
+        {
+          "question": "Как в физике называется состояние двух или более частиц, при котором их квантовые состояния неразрывно связаны независимо от расстояния?",
+          "answer": "Квантовая запутанность.",
+          "nll": 1.5642344951629639,
+          "target_tokens": 8
+        },
+        {
+          "question": "Какой химический элемент составляет наибольшую объёмную долю в атмосфере Земли?",
+          "answer": "Азот.",
+          "nll": 4.273218154907227,
+          "target_tokens": 4
+        },
+        {
+          "question": "Как формулируется второе начало классической термодинамики для изолированной физической системы?",
+          "answer": "Энтропия изолированной системы никогда не убывает со временем.",
+          "nll": 2.1301958560943604,
+          "target_tokens": 15
+        }
+      ]
+    },
+    "code_and_algorithms": {
+      "mean_nll": 2.008279513928198,
+      "ppl": 7.45048785342116,
+      "total_target_tokens": 31,
+      "pairs": [
+        {
+          "question": "What is the average time complexity of the quicksort algorithm when sorting an array of n elements?",
+          "answer": "O(n log n).",
+          "nll": 0.7457997798919678,
+          "target_tokens": 5
+        },
+        {
+          "question": "Which algorithmic paradigm does Dijkstra's shortest path algorithm utilize to find the shortest paths from a single source node?",
+          "answer": "A greedy algorithm paradigm with a priority queue.",
+          "nll": 2.5992352962493896,
+          "target_tokens": 9
+        },
+        {
+          "question": "Which linear data structure strictly enforces a Last-In, First-Out (LIFO) operational discipline?",
+          "answer": "A stack.",
+          "nll": 0.995718777179718,
+          "target_tokens": 3
+        },
+        {
+          "question": "In deep residual neural networks (ResNet), what architectural feature allows gradients to propagate directly across layers without vanishing?",
+          "answer": "Skip connections (or residual shortcut connections).",
+          "nll": 2.773061752319336,
+          "target_tokens": 8
+        },
+        {
+          "question": "Which consensus algorithm is specifically structured as an understandable state-machine replication alternative to Paxos?",
+          "answer": "The Raft consensus algorithm.",
+          "nll": 1.6604830026626587,
+          "target_tokens": 6
+        }
+      ]
+    },
+    "global": {
+      "mean_nll": 1.83474392868115,
+      "ppl": 6.263530029665106,
+      "total_target_tokens": 209
+    }
+  },
+  "trans_results": {
+    "history_and_facts": {
+      "mean_nll": 1.1700889184361412,
+      "ppl": 3.222279145812877,
+      "total_target_tokens": 21,
+      "pairs": [
+        {
+          "question": "In what year was the Treaty of Westphalia signed, ending the Thirty Years' War in Europe?",
+          "answer": "1648.",
+          "nll": 0.6570261120796204,
+          "target_tokens": 5
+        },
+        {
+          "question": "What was the capital of the Byzantine Empire before its fall to the Ottoman Empire in 1453?",
+          "answer": "Constantinople.",
+          "nll": 0.9055062532424927,
+          "target_tokens": 4
+        },
+        {
+          "question": "Who was the primary author of the United States Declaration of Independence in 1776?",
+          "answer": "Thomas Jefferson.",
+          "nll": 1.5440346002578735,
+          "target_tokens": 3
+        },
+        {
+          "question": "Which ancient civilization built the fortress city of Machu Picchu in Peru?",
+          "answer": "The Inca Empire.",
+          "nll": 1.2457565069198608,
+          "target_tokens": 5
+        },
+        {
+          "question": "The ancient Silk Road primarily connected Han Dynasty China with which major western empire?",
+          "answer": "The Roman Empire.",
+          "nll": 1.7009563446044922,
+          "target_tokens": 4
+        }
+      ]
+    },
+    "science_and_medicine": {
+      "mean_nll": 0.708966885294233,
+      "ppl": 2.0318909974582064,
+      "total_target_tokens": 21,
+      "pairs": [
+        {
+          "question": "Which pancreatic islet cells are responsible for the synthesis and secretion of insulin?",
+          "answer": "Beta cells.",
+          "nll": 1.252880334854126,
+          "target_tokens": 3
+        },
+        {
+          "question": "What antibiotic substance was discovered in mold by Alexander Fleming in 1928?",
+          "answer": "Penicillin.",
+          "nll": 0.4404337704181671,
+          "target_tokens": 4
+        },
+        {
+          "question": "In molecular biology, which primary enzyme transcribes genetic information from DNA into messenger RNA?",
+          "answer": "RNA polymerase.",
+          "nll": 0.6440532803535461,
+          "target_tokens": 4
+        },
+        {
+          "question": "Which fundamental quantum mechanical principle states that one cannot simultaneously determine both the exact position and momentum of a subatomic particle?",
+          "answer": "Heisenberg uncertainty principle.",
+          "nll": 0.7202224731445312,
+          "target_tokens": 6
+        },
+        {
+          "question": "Which cellular organelle generates most of the chemical energy needed by eukaryotic cells via oxidative phosphorylation?",
+          "answer": "Mitochondria.",
+          "nll": 0.6175951361656189,
+          "target_tokens": 4
+        }
+      ]
+    },
+    "logic_and_reasoning": {
+      "mean_nll": 1.8880593754896304,
+      "ppl": 6.606535428227481,
+      "total_target_tokens": 82,
+      "pairs": [
+        {
+          "question": "If a rigid glass bottle filled completely to the top with liquid water is tightly sealed and frozen, why does the bottle shatter?",
+          "answer": "Because water expands as it crystallizes into ice, increasing pressure beyond the tensile strength of glass.",
+          "nll": 1.7814972400665283,
+          "target_tokens": 20
+        },
+        {
+          "question": "Why does an automobile risk hydroplaning when traveling at high speeds on a water-covered highway?",
+          "answer": "Because water pressure builds in front of the tire until a thin film separates the tire from the road surface, eliminating traction.",
+          "nll": 2.3748929500579834,
+          "target_tokens": 24
+        },
+        {
+          "question": "If severe drought cuts the global wheat harvest by half while consumer demand remains unchanged, what happens to the market price of bread?",
+          "answer": "The market price of bread increases significantly due to the reduced supply of wheat.",
+          "nll": 0.8773302435874939,
+          "target_tokens": 15
+        },
+        {
+          "question": "When a solid copper rod is heated uniformly, what happens to its physical length?",
+          "answer": "Its length increases due to thermal expansion.",
+          "nll": 0.919173538684845,
+          "target_tokens": 8
+        },
+        {
+          "question": "Why does acoustic sound propagate significantly faster through solid steel than through air?",
+          "answer": "Because steel has much higher elastic stiffness and atomic density than compressible gas.",
+          "nll": 2.778676748275757,
+          "target_tokens": 15
+        }
+      ]
+    },
+    "russian_qa": {
+      "mean_nll": 1.9352523000152022,
+      "ppl": 6.925791212193287,
+      "total_target_tokens": 54,
+      "pairs": [
+        {
+          "question": "Какая фундаментальная математическая формула связывает операцию взятия первообразной с определённым интегралом?",
+          "answer": "Формула Ньютона — Лейбница.",
+          "nll": 2.0925424098968506,
+          "target_tokens": 12
+        },
+        {
+          "question": "В каком году и в какой научной статье исследователи из Google впервые представили архитектуру трансформеров?",
+          "answer": "В 2017 году в статье Attention Is All You Need.",
+          "nll": 1.823962688446045,
+          "target_tokens": 15
+        },
+        {
+          "question": "Как в физике называется состояние двух или более частиц, при котором их квантовые состояния неразрывно связаны независимо от расстояния?",
+          "answer": "Квантовая запутанность.",
+          "nll": 1.4641168117523193,
+          "target_tokens": 8
+        },
+        {
+          "question": "Какой химический элемент составляет наибольшую объёмную долю в атмосфере Земли?",
+          "answer": "Азот.",
+          "nll": 4.198840141296387,
+          "target_tokens": 4
+        },
+        {
+          "question": "Как формулируется второе начало классической термодинамики для изолированной физической системы?",
+          "answer": "Энтропия изолированной системы никогда не убывает со временем.",
+          "nll": 1.5683586597442627,
+          "target_tokens": 15
+        }
+      ]
+    },
+    "code_and_algorithms": {
+      "mean_nll": 2.6318125263337167,
+      "ppl": 13.898939278613637,
+      "total_target_tokens": 31,
+      "pairs": [
+        {
+          "question": "What is the average time complexity of the quicksort algorithm when sorting an array of n elements?",
+          "answer": "O(n log n).",
+          "nll": 0.6560381650924683,
+          "target_tokens": 5
+        },
+        {
+          "question": "Which algorithmic paradigm does Dijkstra's shortest path algorithm utilize to find the shortest paths from a single source node?",
+          "answer": "A greedy algorithm paradigm with a priority queue.",
+          "nll": 2.628108024597168,
+          "target_tokens": 9
+        },
+        {
+          "question": "Which linear data structure strictly enforces a Last-In, First-Out (LIFO) operational discipline?",
+          "answer": "A stack.",
+          "nll": 1.3954483270645142,
+          "target_tokens": 3
+        },
+        {
+          "question": "In deep residual neural networks (ResNet), what architectural feature allows gradients to propagate directly across layers without vanishing?",
+          "answer": "Skip connections (or residual shortcut connections).",
+          "nll": 4.974191665649414,
+          "target_tokens": 8
+        },
+        {
+          "question": "Which consensus algorithm is specifically structured as an understandable state-machine replication alternative to Paxos?",
+          "answer": "The Raft consensus algorithm.",
+          "nll": 1.7788578271865845,
+          "target_tokens": 6
+        }
+      ]
+    },
+    "global": {
+      "mean_nll": 1.8199562353380558,
+      "ppl": 6.1715883464954615,
+      "total_target_tokens": 209
+    }
+  },
+  "generation_samples": [
+    {
+      "question": "In what year was the Treaty of Westphalia signed?",
+      "generated": "1648"
+    },
+    {
+      "question": "Какая фундаментальная формула связывает первообразную с определённым интегралом?",
+      "generated": "1.\n2.\n3.\n4.\n5.\n6.\n7.\n8.\n9.\n10."
+    },
+    {
+      "question": "Why does acoustic sound propagate faster through solid steel than through air?",
+      "generated": "Sound travels faster in solids than in gases because the particles in solids are tightly packed and can transfer vibrations directly to neighboring particles, whereas in gases, particles"
+    }
+  ]
+}

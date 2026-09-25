@@ -1,0 +1,27 @@
+# Virtual environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Local runs, weights, and large traces
+runs/
+real_audit_runs/
+benchmark_runs/
+scratch/
+faytuna_emergent_flow/
+=
+faytuna_flow_final_walkthrough.md
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.npz
+*.pkl
+*.log

@@ -1,0 +1,290 @@
+[
+  {
+    "transition_index": 0,
+    "tensor_name": "transformer.h.0.attn.c_attn.weight",
+    "side": "input",
+    "block_index": 0
+  },
+  {
+    "transition_index": 0,
+    "tensor_name": "transformer.h.0.attn.c_proj.weight",
+    "side": "output",
+    "block_index": 0
+  },
+  {
+    "transition_index": 0,
+    "tensor_name": "transformer.h.0.mlp.c_fc.weight",
+    "side": "input",
+    "block_index": 0
+  },
+  {
+    "transition_index": 0,
+    "tensor_name": "transformer.h.0.mlp.c_proj.weight",
+    "side": "output",
+    "block_index": 0
+  },
+  {
+    "transition_index": 1,
+    "tensor_name": "transformer.h.1.attn.c_attn.weight",
+    "side": "input",
+    "block_index": 1
+  },
+  {
+    "transition_index": 1,
+    "tensor_name": "transformer.h.1.attn.c_proj.weight",
+    "side": "output",
+    "block_index": 1
+  },
+  {
+    "transition_index": 1,
+    "tensor_name": "transformer.h.1.mlp.c_fc.weight",
+    "side": "input",
+    "block_index": 1
+  },
+  {
+    "transition_index": 1,
+    "tensor_name": "transformer.h.1.mlp.c_proj.weight",
+    "side": "output",
+    "block_index": 1
+  },
+  {
+    "transition_index": 1,
+    "tensor_name": "transformer.h.2.attn.c_attn.weight",
+    "side": "input",
+    "block_index": 2
+  },
+  {
+    "transition_index": 1,
+    "tensor_name": "transformer.h.2.attn.c_proj.weight",
+    "side": "output",
+    "block_index": 2
+  },
+  {
+    "transition_index": 1,
+    "tensor_name": "transformer.h.2.mlp.c_fc.weight",
+    "side": "input",
+    "block_index": 2
+  },
+  {
+    "transition_index": 1,
+    "tensor_name": "transformer.h.2.mlp.c_proj.weight",
+    "side": "output",
+    "block_index": 2
+  },
+  {
+    "transition_index": 2,
+    "tensor_name": "transformer.h.3.attn.c_attn.weight",
+    "side": "input",
+    "block_index": 3
+  },
+  {
+    "transition_index": 2,
+    "tensor_name": "transformer.h.3.attn.c_proj.weight",
+    "side": "output",
+    "block_index": 3
+  },
+  {
+    "transition_index": 2,
+    "tensor_name": "transformer.h.3.mlp.c_fc.weight",
+    "side": "input",
+    "block_index": 3
+  },
+  {
+    "transition_index": 2,
+    "tensor_name": "transformer.h.3.mlp.c_proj.weight",
+    "side": "output",
+    "block_index": 3
+  },
+  {
+    "transition_index": 2,
+    "tensor_name": "transformer.h.4.attn.c_attn.weight",
+    "side": "input",
+    "block_index": 4
+  },
+  {
+    "transition_index": 2,
+    "tensor_name": "transformer.h.4.attn.c_proj.weight",
+    "side": "output",
+    "block_index": 4
+  },
+  {
+    "transition_index": 2,
+    "tensor_name": "transformer.h.4.mlp.c_fc.weight",
+    "side": "input",
+    "block_index": 4
+  },
+  {
+    "transition_index": 2,
+    "tensor_name": "transformer.h.4.mlp.c_proj.weight",
+    "side": "output",
+    "block_index": 4
+  },
+  {
+    "transition_index": 3,
+    "tensor_name": "transformer.h.5.attn.c_attn.weight",
+    "side": "input",
+    "block_index": 5
+  },
+  {
+    "transition_index": 3,
+    "tensor_name": "transformer.h.5.attn.c_proj.weight",
+    "side": "output",
+    "block_index": 5
+  },
+  {
+    "transition_index": 3,
+    "tensor_name": "transformer.h.5.mlp.c_fc.weight",
+    "side": "input",
+    "block_index": 5
+  },
+  {
+    "transition_index": 3,
+    "tensor_name": "transformer.h.5.mlp.c_proj.weight",
+    "side": "output",
+    "block_index": 5
+  },
+  {
+    "transition_index": 3,
+    "tensor_name": "transformer.h.6.attn.c_attn.weight",
+    "side": "input",
+    "block_index": 6
+  },
+  {
+    "transition_index": 3,
+    "tensor_name": "transformer.h.6.attn.c_proj.weight",
+    "side": "output",
+    "block_index": 6
+  },
+  {
+    "transition_index": 3,
+    "tensor_name": "transformer.h.6.mlp.c_fc.weight",
+    "side": "input",
+    "block_index": 6
+  },
+  {
+    "transition_index": 3,
+    "tensor_name": "transformer.h.6.mlp.c_proj.weight",
+    "side": "output",
+    "block_index": 6
+  },
+  {
+    "transition_index": 4,
+    "tensor_name": "transformer.h.7.attn.c_attn.weight",
+    "side": "input",
+    "block_index": 7
+  },
+  {
+    "transition_index": 4,
+    "tensor_name": "transformer.h.7.attn.c_proj.weight",
+    "side": "output",
+    "block_index": 7
+  },
+  {
+    "transition_index": 4,
+    "tensor_name": "transformer.h.7.mlp.c_fc.weight",
+    "side": "input",
+    "block_index": 7
+  },
+  {
+    "transition_index": 4,
+    "tensor_name": "transformer.h.7.mlp.c_proj.weight",
+    "side": "output",
+    "block_index": 7
+  },
+  {
+    "transition_index": 4,
+    "tensor_name": "transformer.h.8.attn.c_attn.weight",
+    "side": "input",
+    "block_index": 8
+  },
+  {
+    "transition_index": 4,
+    "tensor_name": "transformer.h.8.attn.c_proj.weight",
+    "side": "output",
+    "block_index": 8
+  },
+  {
+    "transition_index": 4,
+    "tensor_name": "transformer.h.8.mlp.c_fc.weight",
+    "side": "input",
+    "block_index": 8
+  },
+  {
+    "transition_index": 4,
+    "tensor_name": "transformer.h.8.mlp.c_proj.weight",
+    "side": "output",
+    "block_index": 8
+  },
+  {
+    "transition_index": 5,
+    "tensor_name": "transformer.h.9.attn.c_attn.weight",
+    "side": "input",
+    "block_index": 9
+  },
+  {
+    "transition_index": 5,
+    "tensor_name": "transformer.h.9.attn.c_proj.weight",
+    "side": "output",
+    "block_index": 9
+  },
+  {
+    "transition_index": 5,
+    "tensor_name": "transformer.h.9.mlp.c_fc.weight",
+    "side": "input",
+    "block_index": 9
+  },
+  {
+    "transition_index": 5,
+    "tensor_name": "transformer.h.9.mlp.c_proj.weight",
+    "side": "output",
+    "block_index": 9
+  },
+  {
+    "transition_index": 5,
+    "tensor_name": "transformer.h.10.attn.c_attn.weight",
+    "side": "input",
+    "block_index": 10
+  },
+  {
+    "transition_index": 5,
+    "tensor_name": "transformer.h.10.attn.c_proj.weight",
+    "side": "output",
+    "block_index": 10
+  },
+  {
+    "transition_index": 5,
+    "tensor_name": "transformer.h.10.mlp.c_fc.weight",
+    "side": "input",
+    "block_index": 10
+  },
+  {
+    "transition_index": 5,
+    "tensor_name": "transformer.h.10.mlp.c_proj.weight",
+    "side": "output",
+    "block_index": 10
+  },
+  {
+    "transition_index": 6,
+    "tensor_name": "transformer.h.11.attn.c_attn.weight",
+    "side": "input",
+    "block_index": 11
+  },
+  {
+    "transition_index": 6,
+    "tensor_name": "transformer.h.11.attn.c_proj.weight",
+    "side": "output",
+    "block_index": 11
+  },
+  {
+    "transition_index": 6,
+    "tensor_name": "transformer.h.11.mlp.c_fc.weight",
+    "side": "input",
+    "block_index": 11
+  },
+  {
+    "transition_index": 6,
+    "tensor_name": "transformer.h.11.mlp.c_proj.weight",
+    "side": "output",
+    "block_index": 11
+  }
+]

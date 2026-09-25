@@ -1,0 +1,16 @@
+{
+  "mode": "safe",
+  "backend": "auto",
+  "depth_strategy": "auto",
+  "block_order": "auto",
+  "line_search": "auto",
+  "block_size": 2,
+  "min_observable_effect": 0.001,
+  "max_step_norm": 0.25,
+  "hard_max_step_norm": 1.0,
+  "max_relative_step": 0.2,
+  "max_spectral_norm": 2.0,
+  "max_lipschitz": 2.5,
+  "min_confidence": 0.05,
+  "collapse_variance_ratio": 0.05
+}

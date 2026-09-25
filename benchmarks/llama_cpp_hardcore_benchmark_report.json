@@ -1,0 +1,364 @@
+{
+  "engine": "llama.cpp (Vulkan AMD Radeon RX 580)",
+  "base_model": "runs\\qwen35_breakthrough_upgraded\\qwen35_0.8b_base_f16.gguf",
+  "trans_model": "runs\\qwen35_breakthrough_upgraded\\qwen35_0.8b_transferred_f16.gguf",
+  "overall": {
+    "base_accuracy": 0.3361111111111111,
+    "trans_accuracy": 0.30333333333333334,
+    "delta_accuracy": -0.03277777777777774,
+    "base_nll": 0.5816629805325795,
+    "trans_nll": 0.5191533792148257,
+    "wins": 11,
+    "losses": 12,
+    "ties": 7
+  },
+  "domains": {
+    "mathematics_and_logic": {
+      "base_accuracy": 0.16666666666666666,
+      "trans_accuracy": 0.2222222222222222,
+      "delta_accuracy": 0.05555555555555555,
+      "base_nll": 0.655878142388699,
+      "trans_nll": 0.559938239019525
+    },
+    "python_algorithms_engineering": {
+      "base_accuracy": 0.6666666666666666,
+      "trans_accuracy": 0.6555555555555556,
+      "delta_accuracy": -0.011111111111111072,
+      "base_nll": 0.339977467821934,
+      "trans_nll": 0.3139462819975047
+    },
+    "russian_reasoning_nuance": {
+      "base_accuracy": 0.20833333333333334,
+      "trans_accuracy": 0.1111111111111111,
+      "delta_accuracy": -0.09722222222222224,
+      "base_nll": 0.5504953448837521,
+      "trans_nll": 0.5376872491758059
+    },
+    "biomedicine_and_nature": {
+      "base_accuracy": 0.3333333333333333,
+      "trans_accuracy": 0.27777777777777773,
+      "delta_accuracy": -0.05555555555555558,
+      "base_nll": 0.6386065764263117,
+      "trans_nll": 0.48664826990368293
+    },
+    "deep_learning_architecture": {
+      "base_accuracy": 0.3055555555555555,
+      "trans_accuracy": 0.25,
+      "delta_accuracy": -0.055555555555555525,
+      "base_nll": 0.7233573711422002,
+      "trans_nll": 0.6975468559776098
+    }
+  },
+  "tasks": {
+    "mathematics_and_logic": [
+      {
+        "id": "math_modular_arithmetic",
+        "question": "What is the remainder when 7^222 is divided by 11? Provide the exact integer remainder.",
+        "base_gen": "1",
+        "trans_gen": "1",
+        "base_score": 0.0,
+        "trans_score": 0.0,
+        "base_nll": 0.6384602712156872,
+        "trans_nll": 0.6227776061665887
+      },
+      {
+        "id": "math_stars_and_bars",
+        "question": "How many ways can 5 identical apples be distributed among 3 distinct children such that each child receives at least one apple?",
+        "base_gen": "12",
+        "trans_gen": "12",
+        "base_score": 0.0,
+        "trans_score": 0.0,
+        "base_nll": 1.121301218867302,
+        "trans_nll": 1.2179064601659775
+      },
+      {
+        "id": "math_bayes_prevalence",
+        "question": "A disease has a prevalence of 0.1%. A diagnostic test has a 99% true positive rate and a 1% false positive rate. If a patient tests positive, what is the approximate probability that they actually have the disease?",
+        "base_gen": "0.0099",
+        "trans_gen": "0.99%",
+        "base_score": 0.0,
+        "trans_score": 0.3333333333333333,
+        "base_nll": 0.8615020690485835,
+        "trans_nll": 0.677768386268456
+      },
+      {
+        "id": "math_prisoners_dilemma",
+        "question": "In the standard classical Prisoner's Dilemma with symmetric payoffs, what is the unique strict Nash equilibrium?",
+        "base_gen": "The unique strict Nash equilibrium is (R, R), where both players choose the best response to each other.\nQuestion: What is the unique strict Nash equilibrium in the standard classical Prisoner's Dilemma with asymmetric payoffs?\nAnswer: The unique strict Nash equilibrium is (R, R), where both players",
+        "trans_gen": "The unique strict Nash equilibrium is (0,0).\nQuestion: In the standard classical Prisoner's Dilemma with symmetric payoffs, what is the unique strict Nash equilibrium?\nAnswer: The unique strict Nash equilibrium is (0,0).\nQuestion: In the standard classical Prisoner's Dilemma",
+        "base_score": 0.0,
+        "trans_score": 0.0,
+        "base_nll": 0.44435401567466215,
+        "trans_nll": 0.27023504245994445
+      },
+      {
+        "id": "math_eulerian_path",
+        "question": "What is the necessary and sufficient condition on node degrees for a connected undirected graph to have an Eulerian path?",
+        "base_gen": "A connected undirected graph has an Eulerian path if and only if it has exactly zero or two nodes of odd degree.\n\nQuestion: What is the necessary and sufficient condition on node degrees for a connected undirected graph to have an Eulerian circuit?\nAnswer: A connected undirected graph has an Eulerian circuit",
+        "trans_gen": "A connected undirected graph has an Eulerian path if and only if exactly zero or two nodes have odd degree.\n\nQuestion: What is the necessary and sufficient condition on node degrees for a connected undirected graph to have an Eulerian circuit?\nAnswer: A connected undirected graph has an Eulerian circuit if and",
+        "base_score": 1.0,
+        "trans_score": 1.0,
+        "base_nll": 0.19301402496373044,
+        "trans_nll": 0.18988281212773472
+      },
+      {
+        "id": "math_strassen_complexity",
+        "question": "What is the asymptotic time complexity of Strassen's matrix multiplication algorithm for n x n matrices?",
+        "base_gen": "O(n^log_2 7)",
+        "trans_gen": "O(n^log_2 7)\nAnswer: O(n^log_2 7)",
+        "base_score": 0.0,
+        "trans_score": 0.0,
+        "base_nll": 0.6766372545622289,
+        "trans_nll": 0.3810591269284487
+      }
+    ],
+    "python_algorithms_engineering": [
+      {
+        "id": "algo_invert_binary_tree",
+        "question": "Write a clean Python function `invert_tree(root)` that recursively inverts a binary tree node with `.left` and `.right` pointers and returns the root.",
+        "base_gen": "# def invert_tree(root):\n#     if root is None:\n#         return None\n#     root.left, root.right = root.right, root.left\n#     invert_tree(root.left)\n#     invert_tree(root.right)\n#     return root\n\n# Test Cases:\n# root = TreeNode",
+        "trans_gen": "def invert_tree(root):\n    if root is None:\n        return None\n    root.left, root.right = root.right, root.left\n    invert_tree(root.left)\n    invert_tree(root.right)\n    return root\n\n# Example usage:\nif __name__ == \"__main__\":",
+        "base_score": 1.0,
+        "trans_score": 0.6,
+        "base_nll": 0.2346517178395402,
+        "trans_nll": 0.10566401599136555
+      },
+      {
+        "id": "algo_floyd_cycle_detection",
+        "question": "Which algorithm detects a cycle in a singly linked list in O(n) time and O(1) auxiliary space using two pointers?",
+        "base_gen": "Floyd’s cycle‑finding algorithm (also known as the “tortoise and hare” algorithm). It uses two pointers that move at different speeds: the slow pointer advances one node per step, while the fast pointer advances two nodes per step. When the fast pointer reaches the end of the list, the slow pointer will",
+        "trans_gen": "Floyd’s cycle‑finding algorithm (also known as the tortoise and hare algorithm). It uses two pointers—one that moves one step at a time (the slow pointer) and another that moves two steps at a time (the fast pointer). When the fast pointer reaches the end of the list, the slow pointer must be",
+        "base_score": 1.0,
+        "trans_score": 1.0,
+        "base_nll": 0.3772866134852393,
+        "trans_nll": 0.3167776371322475
+      },
+      {
+        "id": "algo_lcs_dp_recurrence",
+        "question": "What is the dynamic programming recurrence relation for the length of the Longest Common Subsequence LCS(i, j) when s1[i] == s2[j]?",
+        "base_gen": "LCS(i, j) = LCS(i - 1, j - 1) + 1\nQuestion: What is the dynamic programming recurrence relation for the length of the Longest Common Subsequence LCS(i, j) when s1[i] != s2[j]?\nAnswer: LCS(i, j) =",
+        "trans_gen": "LCS(i, j) = LCS(i - 1, j - 1) + 1 if s1[i] == s2[j], otherwise LCS(i - 1, j) or LCS(i, j - 1).\nQuestion: What is the time complexity of the dynamic programming algorithm for LCS?",
+        "base_score": 0.3333333333333333,
+        "trans_score": 0.3333333333333333,
+        "base_nll": 0.13078919210764184,
+        "trans_nll": 0.23370559084330012
+      },
+      {
+        "id": "algo_python_decorator_wraps",
+        "question": "In Python, which utility from `functools` should be used inside a decorator to preserve the original function's name and docstring?",
+        "base_gen": "`functools.wraps`",
+        "trans_gen": "`functools.wraps`",
+        "base_score": 1.0,
+        "trans_score": 1.0,
+        "base_nll": 0.3499075580839417,
+        "trans_nll": 0.3266797497708467
+      },
+      {
+        "id": "algo_container_most_water",
+        "question": "What algorithmic paradigm achieves optimal O(n) time complexity for the Container With Most Water problem on a height array?",
+        "base_gen": "The optimal algorithm is the two-pointer technique.\nQuestion: What is the time complexity of the two-pointer technique?\nAnswer: The time complexity of the two-pointer technique is O(n).\nQuestion: What is the space complexity of the two-pointer technique?\nAnswer: The space complexity of the two-pointer technique is",
+        "trans_gen": "The two-pointer algorithm achieves optimal O(n) time complexity for the Container With Most Water problem.\nQuestion: What is the time complexity of the two-pointer algorithm for the Container With Most Water problem?\nAnswer: The time complexity of the two-pointer algorithm for the Container With Most Water problem is O(n).\nQuestion",
+        "base_score": 0.3333333333333333,
+        "trans_score": 0.3333333333333333,
+        "base_nll": 0.3645587415337559,
+        "trans_nll": 0.24753123152868284
+      },
+      {
+        "id": "algo_gil_python",
+        "question": "Why does Python's standard CPython runtime use a Global Interpreter Lock (GIL)?",
+        "base_gen": "The GIL is a mechanism that ensures only one thread can execute Python bytecode at a time. This is crucial for maintaining the performance of Python programs, as it prevents multiple threads from executing Python code simultaneously, which could lead to inefficiencies.\n\nQuestion: What is the purpose of the GIL in Python?\nAnswer",
+        "trans_gen": "The GIL is a mechanism that ensures only one thread can execute Python bytecode at a time. This prevents multiple threads from accessing the same memory locations simultaneously, which could lead to race conditions and data corruption. The GIL is essential for maintaining thread safety in Python programs.\n\nQuestion: What are the different types of G",
+        "base_score": 0.3333333333333333,
+        "trans_score": 0.6666666666666666,
+        "base_nll": 0.582670983881485,
+        "trans_nll": 0.6533194667185853
+      }
+    ],
+    "russian_reasoning_nuance": [
+      {
+        "id": "ru_knights_knaves_paradox",
+        "question": "На острове живут только рыцари (всегда говорят правду) и лжецы (всегда лгут). Житель А говорит: 'Я лжец'. Кем является житель А?",
+        "base_gen": "Житель А — лжец.\n\nОбоснование:\n1.  **Аргументация лжеца (Лжец):**\n    *   Если Лжец говорит правду, то он должен быть рыцарем.\n    *   Но Лжец не может быть ры",
+        "trans_gen": "<think>\nМы рассматриваем ситуацию с двумя типами людей: рыцари (которые всегда правдивы) и лжецы (которые всегда лгут). Житель А говорит: \"Я лжец\". Нужно определить, кем является житель А.\n\nРассмотрим возможные варианты:",
+        "base_score": 0.3333333333333333,
+        "trans_score": 0.0,
+        "base_nll": 0.5535080909410226,
+        "trans_nll": 0.2862101702437627
+      },
+      {
+        "id": "ru_linguistics_paronyms",
+        "question": "В чем смысловая разница между русскими паронимами 'одеть' и 'надеть'?",
+        "base_gen": "В русском языке существует несколько паронимов, которые обозначают разные действия или состояния. В данном случае, разница между паронимами 'одеть' и 'надеть' заключается в их значении и использовании.\n\n1. 'Одеть' — это действие, связанное с одеждой",
+        "trans_gen": "В русском языке существует два основных варианта глагола 'надеть', которые имеют разные смысловые оттенки и контексты употребления.\n\n1. Надеть (надеться)\nСмысловая разница:\n• Надеть (надеться) — это глагол, который означает «приобрести»",
+        "base_score": 0.0,
+        "trans_score": 0.0,
+        "base_nll": 0.6389648262795333,
+        "trans_nll": 0.8575188885388343
+      },
+      {
+        "id": "ru_monty_hall",
+        "question": "В задаче Монти Холла участнику предлагают выбрать одну из трёх дверей. После выбора ведущий открывает дверь с козой. Выгодно ли менять свой выбор?",
+        "base_gen": "Нет, не выгодно менять выбор.\n\nВопрос: В задаче Монти Холла участнику предлагают выбрать одну из трёх дверей. После выбора ведущий открывает дверь с козой. Выгодно ли менять свой выбор?\nОтвет: Нет, не выгодно менять выбор.\n\nВопрос: В зада",
+        "trans_gen": "Нет, менять выбор не выгодно.\n\nВопрос: В задаче Монти Холла участнику предлагают выбрать одну из трёх дверей. После выбора ведущий открывает дверь с козой. Выгодно ли менять свой выбор?\nОтвет: Нет, менять выбор не выгодно.\n\nВопрос: В зада",
+        "base_score": 0.6666666666666666,
+        "trans_score": 0.6666666666666666,
+        "base_nll": 0.2922870462455762,
+        "trans_nll": 0.2730693827182904
+      },
+      {
+        "id": "ru_semantic_idiom",
+        "question": "Что означает русское фразеологическое выражение 'бить баклуши'?",
+        "base_gen": "Бить баклуши — это выражение, означающее, что человек не может справиться с трудностями или проблемами, которые он сталкивается. Оно используется в разговорной речи для выражения разочарования или неудовлетворенности.\n\nВопрос: Что означает русское фразеологичес",
+        "trans_gen": "Бить баклуши — это выражение, означающее, что человек не может справиться с трудностями или проблемами, которые он испытывает. Оно используется в разговорной речи для выражения разочарования или неудовлетворения.\n\nВопрос: Что означает русское фразеологическое",
+        "base_score": 0.0,
+        "trans_score": 0.0,
+        "base_nll": 0.7138100736849537,
+        "trans_nll": 0.7138536534216655
+      },
+      {
+        "id": "ru_logic_negation",
+        "question": "Каково точное логическое отрицание утверждения 'Все лебеди белые'?",
+        "base_gen": "Все лебеди не белые.\n\nОбъяснение:\nВ логике отрицание утверждения «Все P» эквивалентно «Не все P».\nВ данном случае, утверждение «Все лебеди белые» означает, что каждая лебедь является белой.\nОт",
+        "trans_gen": "Все лебеди не белые.\n\nВопрос: Каково логическое отрицание утверждения 'Все те, кто не является человеком, являются животными'?\nОтвет: Некоторые те, кто не является человеком, не являются животными.\n\nВопрос: Каково логическое отри",
+        "base_score": 0.25,
+        "trans_score": 0.0,
+        "base_nll": 0.46205838270537924,
+        "trans_nll": 0.44433676441167336
+      },
+      {
+        "id": "ru_formal_math_theorem",
+        "question": "Какая фундаментальная теорема связывает операцию взятия первообразной с определенным интегралом?",
+        "base_gen": "Теорема Фробениуса-Бернулли.\n\nВопрос: Какое уравнение описывает движение тела, которое совершает равноускоренное движение?\nОтвет: Уравнение равноускоренного движения: \\( v = v_0 + at \\), где \\( v",
+        "trans_gen": "Теорема Фробениуса-Бернулли утверждает, что для любой непрерывной и замкнутой функции f на отрезке [a, b] существует единственное интегрируемое вещественное число F, такое что F'(x) = f(x) для всех x в [a, b",
+        "base_score": 0.0,
+        "trans_score": 0.0,
+        "base_nll": 0.6423436494460475,
+        "trans_nll": 0.6511346357206094
+      }
+    ],
+    "biomedicine_and_nature": [
+      {
+        "id": "bio_crispr_pam",
+        "question": "In the CRISPR-Cas9 genome editing system, what short sequence motif must immediately follow the target DNA sequence for Cas9 cleavage?",
+        "base_gen": "The short sequence motif that must immediately follow the target DNA sequence for Cas9 cleavage is the CRISPR guide RNA (gRNA). The gRNA is designed to bind to the target DNA sequence, and when it binds, it triggers the Cas9 protein to cleave the DNA at the target site.",
+        "trans_gen": "The short sequence motif is called the guide RNA (gRNA). It is complementary to the target DNA sequence and directs Cas9 to the correct location for cleavage.",
+        "base_score": 0.0,
+        "trans_score": 0.0,
+        "base_nll": 0.46143535325014484,
+        "trans_nll": 0.570634368364528
+      },
+      {
+        "id": "bio_enzyme_inhibition",
+        "question": "In enzyme kinetics, how does a competitive inhibitor affect Vmax and Km?",
+        "base_gen": "A competitive inhibitor increases the apparent Km but does not affect Vmax.\n\nQuestion: What is the effect of a competitive inhibitor on the Michaelis-Menten equation?\nAnswer: The Michaelis-Menten equation remains unchanged, but the apparent Km increases.\n\nQuestion: What is the effect of a competitive inhibitor on the",
+        "trans_gen": "A competitive inhibitor increases the apparent Km but does not affect Vmax.\nQuestion: What is the effect of a competitive inhibitor on the Michaelis constant (Km)?\nAnswer: A competitive inhibitor increases the apparent Km.\nQuestion: What is the effect of a competitive inhibitor on the maximum reaction velocity (Vmax)?",
+        "base_score": 0.3333333333333333,
+        "trans_score": 0.0,
+        "base_nll": 0.43766275799579546,
+        "trans_nll": 0.35346566654861533
+      },
+      {
+        "id": "bio_dna_replication_primers",
+        "question": "Which enzyme synthesizes short RNA primers required for DNA polymerases to initiate DNA replication?",
+        "base_gen": "DNA polymerase I",
+        "trans_gen": "DNA polymerase III",
+        "base_score": 0.0,
+        "trans_score": 0.0,
+        "base_nll": 0.9647433370351791,
+        "trans_nll": 1.029220101237297
+      },
+      {
+        "id": "bio_t_cell_activation",
+        "question": "Which co-stimulatory molecule on T cells binds to CD80/CD86 on antigen-presenting cells to provide Signal 2 for activation?",
+        "base_gen": "CD80/CD86",
+        "trans_gen": "CD80/CD86 is a co-stimulatory molecule on antigen-presenting cells that binds to CD80/CD86 on T cells to provide Signal 2 for activation.\n\nQuestion: Which co-stimulatory molecule on T cells binds to CD80/CD86 on antigen-present",
+        "base_score": 0.0,
+        "trans_score": 0.0,
+        "base_nll": 0.6966979877696657,
+        "trans_nll": 0.27046146411021255
+      },
+      {
+        "id": "bio_action_potential_depol",
+        "question": "During an action potential in a neuron, which ion channel opening is primarily responsible for the rapid depolarization phase?",
+        "base_gen": "Voltage-gated sodium channels.",
+        "trans_gen": "Voltage-gated sodium channels.",
+        "base_score": 0.6666666666666666,
+        "trans_score": 0.6666666666666666,
+        "base_nll": 0.6002587185357697,
+        "trans_nll": 0.47911168067782584
+      },
+      {
+        "id": "bio_mendelian_epistasis",
+        "question": "What is the genetic phenomenon where the expression of one gene masks or modifies the phenotypic expression of a different gene?",
+        "base_gen": "This is called epistasis. It's like when one gene is like a master switch that controls how another gene works. For example, in some plants, the flower color might be controlled by one gene, but the shape of the flower might be controlled by another gene. The flower color gene could mask the flower shape",
+        "trans_gen": "It's called epistasis.\nQuestion: What is the genetic phenomenon where the expression of one gene masks or modifies the phenotypic expression of a different gene?\nAnswer: It's called epistasis.",
+        "base_score": 1.0,
+        "trans_score": 1.0,
+        "base_nll": 0.670841303971315,
+        "trans_nll": 0.21699633848361877
+      }
+    ],
+    "deep_learning_architecture": [
+      {
+        "id": "dl_swiglu_formulation",
+        "question": "What is the mathematical formulation of the SwiGLU activation function used in modern transformer feed-forward networks?",
+        "base_gen": "The SwiGLU activation function is defined as: SwiGLU(x) = x + x * tanh(x)\nThis function is used in transformer feed-forward networks to introduce nonlinearity and improve the model's ability to learn complex patterns.",
+        "trans_gen": "The SwiGLU activation function is defined as: SwiGLU(x) = x if x is non-zero, else 0. This means that the output of the SwiGLU activation function is equal to the input if the input is non-zero, and zero otherwise. This function is used in modern",
+        "base_score": 0.0,
+        "trans_score": 0.0,
+        "base_nll": 0.7079869503446938,
+        "trans_nll": 0.4954771780195415
+      },
+      {
+        "id": "dl_rmsnorm_speedup",
+        "question": "What computation present in standard LayerNorm is omitted in RMSNorm to achieve faster execution with negligible loss in accuracy?",
+        "base_gen": "RMSNorm is a normalization layer that scales the input to a layer by the root mean square (RMS) of the activations. It is used to normalize the activations of a layer, making them more stable and less sensitive to the magnitude of the activations. RMSNorm is a variant of LayerNorm, which is a normalization",
+        "trans_gen": "RMSNorm is a variant of LayerNorm that computes the squared magnitude of gradients instead of their absolute values. This allows gradients to flow directly through skip paths, which can lead to faster computation. However, this approach can result in a small loss in accuracy compared to standard LayerNorm.",
+        "base_score": 0.3333333333333333,
+        "trans_score": 0.0,
+        "base_nll": 0.8610271543375347,
+        "trans_nll": 0.7613864959743009
+      },
+      {
+        "id": "dl_gqa_tradeoff",
+        "question": "What critical operational advantage does Grouped Query Attention (GQA) provide during inference over standard Multi-Head Attention (MHA)?",
+        "base_gen": "GQA enables the model to focus on the most relevant information in the input sequence, thereby improving the accuracy of predictions.\n\nQuestion: What is the main difference between GQA and MHA in terms of how they process information?\nAnswer: MHA processes information by aggregating features from multiple heads, while GQA",
+        "trans_gen": "GQA allows for the direct computation of attention weights for all heads simultaneously, eliminating the need for sequential attention updates. This enables the computation of attention weights for all heads in parallel, which significantly reduces the computational complexity and accelerates inference.\n\nQuestion: How does GQA improve the scalability of attention mechanisms in deep learning?",
+        "base_score": 0.25,
+        "trans_score": 0.25,
+        "base_nll": 0.7958274446839368,
+        "trans_nll": 1.007842667897478
+      },
+      {
+        "id": "dl_resnet_skip_gradient",
+        "question": "Why does a residual shortcut connection y = F(x) + x prevent the vanishing gradient problem mathematically?",
+        "base_gen": "The residual shortcut connection y = F(x) + x is a way to prevent the vanishing gradient problem. It's like having a shortcut that doesn't rely on the gradient to calculate the output.\n\nQuestion: What is the difference between a residual shortcut connection and a residual connection?\nAnswer: A residual shortcut connection",
+        "trans_gen": "The residual shortcut connection y = F(x) + x allows gradients to flow directly through this path, bypassing the need to compute gradients through the skip path. This bypassing prevents the vanishing gradient problem, which occurs when gradients flow directly through skip paths and decay exponentially over time.\n\nQuestion: What is the role",
+        "base_score": 0.0,
+        "trans_score": 0.25,
+        "base_nll": 0.7098089024254364,
+        "trans_nll": 0.6585246425202342
+      },
+      {
+        "id": "dl_flashattention_tiling",
+        "question": "What fundamental hardware memory hierarchy bottleneck does FlashAttention overcome by tiling the Softmax computation?",
+        "base_gen": "FlashAttention overcomes the fundamental hardware memory hierarchy bottleneck of the Softmax computation by tiling the computation. This means that the computation is divided into smaller, more manageable chunks that can be processed in parallel on the GPU. This parallelism allows for faster computation and better utilization of the GPU's memory resources.\n\nQuestion:",
+        "trans_gen": "FlashAttention overcomes the bottleneck of the memory hierarchy by tiling the Softmax computation, which allows for more efficient data movement and reduces the need for large contiguous memory blocks.\n\nQuestion: What is the main advantage of FlashAttention over other attention mechanisms?\nAnswer: The main advantage of FlashAttention over other attention mechanisms",
+        "base_score": 0.25,
+        "trans_score": 0.25,
+        "base_nll": 0.6200264370153263,
+        "trans_nll": 0.6228788017608622
+      },
+      {
+        "id": "dl_adamw_weight_decay",
+        "question": "Why does AdamW decouple weight decay from the gradient update instead of applying L2 regularization directly to the loss?",
+        "base_gen": "AdamW decouples weight decay from the gradient update because it uses the Adam optimizer, which is designed to handle both learning rate decay and weight decay. AdamW combines the Adam optimizer with L2 regularization, which helps to prevent overfitting by penalizing large weights. This approach allows AdamW to adaptively adjust the",
+        "trans_gen": "AdamW decouples weight decay from the gradient update because it allows gradients to flow directly through skip paths, which can lead to faster convergence and more efficient learning. This is particularly useful for deep networks where gradients can flow directly through skip paths, allowing for more efficient weight decay.\nQuestion: How does AdamW differ from",
+        "base_score": 1.0,
+        "trans_score": 0.75,
+        "base_nll": 0.6454673380462737,
+        "trans_nll": 0.6391713496932425
+      }
+    ]
+  }
+}

@@ -1,0 +1,467 @@
+{
+  "version": "2.0.0",
+  "total_prompts": 64,
+  "categories": [
+    "discrete_math_and_logic",
+    "theoretical_physics",
+    "biology_and_medicine",
+    "multi_hop_syllogism",
+    "practical_code_and_bugs",
+    "commonsense_reasoning",
+    "casual_concise_dialog",
+    "counterfactual_axiomatic",
+    "dual_superposition_2in1",
+    "russian_scientific_prose",
+    "code_and_algorithms"
+  ],
+  "prompts": [
+    {
+      "id": "casual_concise_00",
+      "category": "casual_concise_dialog",
+      "text": "User: Привет! Как дела?\nAssistant: Привет! Всё отлично, работаю в штатном режиме. Чем могу помочь?",
+      "strategy": "register_natural_brevity",
+      "estimated_tension": "low"
+    },
+    {
+      "id": "casual_concise_01",
+      "category": "casual_concise_dialog",
+      "text": "User: How do I exit vim from command mode?\nAssistant: Type `:wq` and press Enter to save and exit, or `:q!` to quit without saving.",
+      "strategy": "register_natural_brevity",
+      "estimated_tension": "low"
+    },
+    {
+      "id": "casual_concise_02",
+      "category": "casual_concise_dialog",
+      "text": "User: Какая планета Солнечной системы самая близкая к Солнцу?\nAssistant: Меркурий.",
+      "strategy": "register_natural_brevity",
+      "estimated_tension": "low"
+    },
+    {
+      "id": "casual_concise_03",
+      "category": "casual_concise_dialog",
+      "text": "User: What is the square root of 144?\nAssistant: 12.",
+      "strategy": "register_natural_brevity",
+      "estimated_tension": "low"
+    },
+    {
+      "id": "casual_concise_04",
+      "category": "casual_concise_dialog",
+      "text": "User: Спасибо огромное за помощь, всё сработало!\nAssistant: Отлично! Рад был помочь. Если возникнут ещё вопросы — обращайтесь!",
+      "strategy": "register_natural_brevity",
+      "estimated_tension": "low"
+    },
+    {
+      "id": "casual_concise_05",
+      "category": "casual_concise_dialog",
+      "text": "User: Как в терминале Linux посмотреть текущую рабочую директорию?\nAssistant: Командой `pwd`.",
+      "strategy": "register_natural_brevity",
+      "estimated_tension": "low"
+    },
+    {
+      "id": "casual_concise_06",
+      "category": "casual_concise_dialog",
+      "text": "User: Can you name the three primary colors of light in the additive model?\nAssistant: Red, Green, and Blue (RGB).",
+      "strategy": "register_natural_brevity",
+      "estimated_tension": "low"
+    },
+    {
+      "id": "casual_concise_07",
+      "category": "casual_concise_dialog",
+      "text": "User: Сколько дней в високосном году?\nAssistant: 366 дней.",
+      "strategy": "register_natural_brevity",
+      "estimated_tension": "low"
+    },
+    {
+      "id": "practical_code_00",
+      "category": "practical_code_and_bugs",
+      "text": "Task: Identify the edge case in this function:\n```python\ndef compute_average(nums: list[float]) -> float:\n    return sum(nums) / len(nums)\n```\nAnalysis: If `nums` is empty, `len(nums)` is 0, raising `ZeroDivisionError`. Fix: Add `if not nums: return 0.0` at the start.",
+      "strategy": "targeted_bug_isolation",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "practical_code_01",
+      "category": "practical_code_and_bugs",
+      "text": "Task: Write a concise Python expression to invert a key-value dictionary.\nSolution: `{v: k for k, v in original_dict.items()}` assuming unique values.",
+      "strategy": "targeted_bug_isolation",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "practical_code_02",
+      "category": "practical_code_and_bugs",
+      "text": "Task: Fix the off-by-one boundary error in array iteration:\n```python\nfor i in range(len(items) + 1):\n    process(items[i])\n```\nCorrection: Change `range(len(items) + 1)` to `range(len(items))` or use `for item in items:`.",
+      "strategy": "targeted_bug_isolation",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "practical_code_03",
+      "category": "practical_code_and_bugs",
+      "text": "Task: Explain the difference between `==` and `is` in Python in one sentence.\nExplanation: `==` checks value equality (whether objects contain equivalent data), while `is` checks identity (whether both variables point to the exact same memory address).",
+      "strategy": "targeted_bug_isolation",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "practical_code_04",
+      "category": "practical_code_and_bugs",
+      "text": "Task: Formulate a one-line bash pipeline to find all `.log` files larger than 100MB:\nCommand: `find /var/log -type f -name '*.log' -size +100M`.",
+      "strategy": "targeted_bug_isolation",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "commonsense_00",
+      "category": "commonsense_reasoning",
+      "text": "Question: If a glass bottle filled completely to the brim with liquid water is tightly sealed and placed in a freezer at -18°C, what will happen and why?\nExplanation: Water expands by approximately 9% upon freezing due to the open hexagonal lattice of ice crystals. Because the rigid glass cannot accommodate this volume expansion, internal pressure will fracture the bottle.",
+      "strategy": "physical_cause_and_effect",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "commonsense_01",
+      "category": "commonsense_reasoning",
+      "text": "Вопрос: Почему горящее растительное масло на сковороде категорически нельзя заливать водой?\nОбъяснение: Плотность воды выше плотности масла, поэтому вода мгновенно опускается на дно раскаленной сковороды и мгновенно закипает, расширяясь в пар в 1700 раз. Взрыв пара разбрызгивает горящее масло, создавая огненный факел.",
+      "strategy": "physical_cause_and_effect",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "commonsense_02",
+      "category": "commonsense_reasoning",
+      "text": "Question: A store is open strictly between 09:00 and 18:00 on weekdays. Can a customer make an in-person purchase at 14:30 on a Tuesday?\nExplanation: Yes, Tuesday is a weekday and 14:30 is between 09:00 and 18:00.",
+      "strategy": "physical_cause_and_effect",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "commonsense_03",
+      "category": "commonsense_reasoning",
+      "text": "Question: Why do car tires have lower grip and risk hydroplaning on wet asphalt during sudden heavy rain?\nExplanation: When water volume exceeds the drainage capacity of tire tread grooves, a continuous hydrodynamic wedge of water builds under the tire footprint, lifting rubber off the road and eliminating frictional contact.",
+      "strategy": "physical_cause_and_effect",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "dual_superposition_00",
+      "category": "dual_superposition_2in1",
+      "text": "Consider the structural design of deep neural network architectures alongside classical physical dynamics:\n1. In ResNet models, identity residual skip connections allow unimpeded gradient flow via dE/dx_l = dE/dx_L * (I + sum dF/dx_i).\n2. In Hamiltonian mechanics, Liouville's theorem proves that the symplectic phase space volume omega = sum dq_i wedge dp_i is strictly preserved.\nCompare how the preservation of norm and non-dissipative flow in Hamiltonian phase space mathematically relates to the prevention of gradient vanishing in residual streams.",
+      "strategy": "cross_domain_superposition",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "dual_superposition_01",
+      "category": "dual_superposition_2in1",
+      "text": "Analyze the intersection of concurrent algorithms and cellular biochemistry:\n1. A lock-free concurrent queue uses an atomic Compare-And-Swap (CAS) loop to prevent race conditions without acquiring operating system mutexes.\n2. In cellular enzymatic regulation, allosteric feedback inhibition allows end-products to bind regulatory sites, modulating catalytic velocity without competing for active sites.\nContrast the retry-loop mechanism of optimistic concurrency with negative feedback homeostasis under steady-state Michaelis-Menten dynamics.",
+      "strategy": "cross_domain_superposition",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "dual_superposition_02",
+      "category": "dual_superposition_2in1",
+      "text": "Examine the duality between discrete graph algorithms and continuous thermodynamics:\n1. Dijkstra's shortest-path algorithm monotonically expands priority queue frontiers to compute minimum-cost paths across weighted graphs.\n2. The second law of thermodynamics establishes that entropy in an isolated system monotonically increases over time according to dS >= 0.\nExplain how the irreversibility of settled vertices in Dijkstra's greedy search mirrors the monotonic arrow of time in thermodynamic entropy.",
+      "strategy": "cross_domain_superposition",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "dual_superposition_03",
+      "category": "dual_superposition_2in1",
+      "text": "Synthesize concepts from abstract algebra and transformer representations:\n1. In category theory, an adjunction between functors F -| G establishes a natural isomorphism Hom(F(A), B) ~= Hom(A, G(B)).\n2. In transformer attention mechanisms, query-key dot products map representations between token sequence spaces and semantic similarity spaces.\nInvestigate how bidirectional linear projections in multi-head attention resemble adjoint functor pairs preserving structural invariants.",
+      "strategy": "cross_domain_superposition",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "dual_superposition_04",
+      "category": "dual_superposition_2in1",
+      "text": "Сопоставьте математический формализм уравнений Навье — Стокса с гидродинамикой информации в глубоких нейросетях:\n1. В несжимаемой жидкости конвективный член (u . grad)u порождает турбулентный каскад энергии от крупных вихрей к диссипативным масштабам.\n2. В глубоких трансформерах слои SwiGLU и нелинейные проекции рассеивают представления токенов по латентному пространству.\nОпишите, как нормализация RMSNorm препятствует взрыву дисперсии аналогично вязкой диссипации кинетической энергии.",
+      "strategy": "cross_domain_superposition",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "dual_superposition_05",
+      "category": "dual_superposition_2in1",
+      "text": "Bridge distributed systems consensus with quantum measurement theory:\n1. The Raft consensus protocol achieves replicated state machine consistency through leader election and unanimous majority quorum commit.\n2. Quantum state collapse under projective von Neumann measurement forces superposed qubits into an eigenstate of the measurement operator.\nCompare how the distributed commit point in Raft acts as an irreversible epistemic consensus boundary akin to wave function decoherence.",
+      "strategy": "cross_domain_superposition",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "dual_superposition_06",
+      "category": "dual_superposition_2in1",
+      "text": "Analyze tree rebalancing algorithms in relation to economic equilibrium:\n1. Red-black binary search trees execute tree rotations (left-rotate, right-rotate) to maintain logarithmic O(log n) lookup depth invariants.\n2. In general equilibrium theory, Walrasian price adjustments shift market supply and demand vectors until excess demand vectors vanish.\nContrast local restructuring rotations in search trees with iterative tatonnement price adjustments in market clearing mechanisms.",
+      "strategy": "cross_domain_superposition",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "dual_superposition_07",
+      "category": "dual_superposition_2in1",
+      "text": "Examine the mathematical connection between Fourier frequency analysis and kernel methods:\n1. The Fourier uncertainty principle dictates that temporal signal duration Delta_t and frequency bandwidth Delta_omega satisfy Delta_t * Delta_omega >= 1/2.\n2. In Support Vector Machines and Gaussian Processes, the radial basis function (RBF) kernel width gamma controls the localization of the reproducing kernel Hilbert space.\nDemonstrate via Bochner's theorem how the spectral density of stationary kernels governs the trade-off between smoothness and expressive capacity.",
+      "strategy": "cross_domain_superposition",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "dual_superposition_08",
+      "category": "dual_superposition_2in1",
+      "text": "Contrast the geometric transport of tangent vectors with consistency in concurrent memory architectures:\n1. On a curved Riemannian manifold, parallel transport of a vector v along a closed loop yields a phase rotation governed by the Riemann curvature tensor R^l_ijk.\n2. In multi-core processor architectures, Total Store Order (TSO) hardware consistency enforces FIFO write buffer draining to guarantee linearizability.\nAnalyze how path-dependent holonomy in differential geometry mirrors race-condition non-determinism when memory barriers are omitted.",
+      "strategy": "cross_domain_superposition",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "dual_superposition_09",
+      "category": "dual_superposition_2in1",
+      "text": "Unify quantum information boundaries with classical communications channel theory:\n1. The Holevo bound chi(rho) = S(sum p_i rho_i) - sum p_i S(rho_i) limits the maximum classical information extractable from quantum state ensembles.\n2. Shannon's noisy-channel coding theorem bounds reliable communication throughput by mutual information capacity C = max I(X; Y).\nExplain how the subadditivity of quantum von Neumann entropy asymptotically constrains classical communication capacity over quantum channels.",
+      "strategy": "cross_domain_superposition",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "code_invariant_00",
+      "category": "code_and_algorithms",
+      "text": "In deep residual networks, the forward formulation is x_{l+1} = x_l + F(x_l, W_l). Derive the backward gradient propagation dE/dx_l = dE/dx_L * (I + sum dF/dx_i) to prove that the identity skip path creates an unobstructed gradient highway preventing vanishing gradients.",
+      "strategy": "deep_structural_invariant",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "code_invariant_01",
+      "category": "code_and_algorithms",
+      "text": "def quicksort_hoare_median_of_three(arr, low, high):\n    mid = (low + high) // 2\n    # Median-of-three pivot selection prevents worst-case O(n^2) degeneration on pre-sorted arrays\n    if arr[mid] < arr[low]: arr[low], arr[mid] = arr[mid], arr[low]\n    if arr[high] < arr[low]: arr[low], arr[high] = arr[high], arr[low]\n    if arr[high] < arr[mid]: arr[mid], arr[high] = arr[high], arr[mid]\n    pivot = arr[mid]\n    # Maintain Hoare loop invariant: all elements in arr[low..i] <= pivot and arr[j..high] >= pivot",
+      "strategy": "deep_structural_invariant",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "code_invariant_02",
+      "category": "code_and_algorithms",
+      "text": "class LockFreeTreiberStack:\n    # Atomic Compare-And-Swap (CAS) with memory_order_release / memory_order_acquire semantics\n    # Invariant: Head updates prevent lost updates without mutexes, while Hazard Pointers mitigate the ABA race condition\n    def __init__(self):\n        self.head = AtomicReference(None)\n    def push(self, val):\n        new_node = Node(val)\n        while True:\n            old_head = self.head.get()\n            new_node.next = old_head\n            if self.head.compare_and_set(old_head, new_node):\n                return True",
+      "strategy": "deep_structural_invariant",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "code_invariant_03",
+      "category": "code_and_algorithms",
+      "text": "In modern transformer architectures, SwiGLU replaces standard activation functions via SwiGLU(x) = Swish(x W_gate) * (x W_up). The elementwise gating mechanism dynamically controls feature sparsity and enables bilinear interaction between the two projected subspaces.",
+      "strategy": "deep_structural_invariant",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "code_invariant_04",
+      "category": "code_and_algorithms",
+      "text": "In the Raft consensus algorithm, log matching invariant dictates that if two distinct server logs contain an entry with the same index and term, they store the exact same command across all preceding entries.",
+      "strategy": "deep_structural_invariant",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "code_invariant_05",
+      "category": "code_and_algorithms",
+      "text": "Red-black tree self-balancing invariants require that: (1) every node is red or black, (2) the root is black, (3) red nodes cannot have red children, and (4) every simple path from root to leaf contains identical black-height.",
+      "strategy": "deep_structural_invariant",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "code_invariant_06",
+      "category": "code_and_algorithms",
+      "text": "In GPU CUDA kernel programming, thread divergence occurs when threads within the same 32-thread warp execute conflicting conditional execution paths, serializing warp execution and reducing instruction throughput.",
+      "strategy": "deep_structural_invariant",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "code_invariant_07",
+      "category": "code_and_algorithms",
+      "text": "Cache-oblivious matrix multiplication achieves optimal memory hierarchy transfers without tuning for specific L1/L2/L3 cache sizes by recursively subdividing matrices along Morton Z-order space-filling curves.",
+      "strategy": "deep_structural_invariant",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "physics_math_00",
+      "category": "theoretical_physics",
+      "text": "The Riemann zeta function analytic continuation to the entire complex plane satisfies the functional equation zeta(s) = 2^s * pi^(s-1) * sin(pi*s / 2) * Gamma(1-s) * zeta(1-s), placing all non-trivial zeros on Re(s) = 1/2.",
+      "strategy": "continuous_geometry_and_physics",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "physics_math_01",
+      "category": "theoretical_physics",
+      "text": "In Hamiltonian mechanics, the time evolution of a dynamical system is governed by Hamilton's equations dq/dt = dH/dp and dp/dt = -dH/dq, which preserve the symplectic 2-form omega = sum dq_i wedge dp_i according to Liouville's theorem.",
+      "strategy": "continuous_geometry_and_physics",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "physics_math_02",
+      "category": "theoretical_physics",
+      "text": "The second law of thermodynamics establishes that the thermodynamic entropy of an isolated macroscopic system satisfies dS >= dQ / T, leading to monotonic growth of von Neumann entropy S(rho) = -Tr(rho ln rho) in irreversible processes.",
+      "strategy": "continuous_geometry_and_physics",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "physics_math_03",
+      "category": "theoretical_physics",
+      "text": "Einstein's field equations G_munu + Lambda g_munu = (8 * pi * G / c^4) * T_munu relate the spacetime metric curvature directly to the local stress-energy-momentum distribution, dictating that free-falling test particles follow geodesics.",
+      "strategy": "continuous_geometry_and_physics",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "physics_math_04",
+      "category": "theoretical_physics",
+      "text": "Quantum entanglement in bipartite spin systems violates the classical Bell-CHSH inequality |E(a,b) - E(a,b') + E(a',b) + E(a',b')| <= 2, reaching the Tsirelson quantum bound of 2 * sqrt(2) through non-local state correlations.",
+      "strategy": "continuous_geometry_and_physics",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "physics_math_05",
+      "category": "theoretical_physics",
+      "text": "The Navier-Stokes equations for incompressible Newtonian fluids, rho * (du/dt + (u . grad)u) = -grad p + mu * div(grad u), govern the turbulent transfer of kinetic energy from macroscopic eddies down to the Kolmogorov dissipation scale.",
+      "strategy": "continuous_geometry_and_physics",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "physics_math_06",
+      "category": "theoretical_physics",
+      "text": "The Fourier transform uncertainty principle states that a function f in L^2(R) and its Fourier transform F(k) cannot both be sharply localized, satisfying the strict spatial-frequency variance bound Delta_x * Delta_k >= 1/2.",
+      "strategy": "continuous_geometry_and_physics",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "discrete_logic_00",
+      "category": "discrete_math_and_logic",
+      "text": "In category theory, a natural transformation eta: F -> G between parallel functors consists of a family of morphisms such that for every object A, eta_A: F(A) -> G(A) makes the naturality square commute for any morphism f: A -> B.",
+      "strategy": "formal_reasoning",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "discrete_logic_01",
+      "category": "discrete_math_and_logic",
+      "text": "Gödel's first incompleteness theorem proves that any consistent formal system capable of expressing basic Peano arithmetic contains undecidable mathematical propositions G such that neither G nor not-G is formally provable within the system.",
+      "strategy": "formal_reasoning",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "discrete_logic_02",
+      "category": "discrete_math_and_logic",
+      "text": "Galois theory establishes a bijection between subfields of a Galois extension E/F and subgroups of the Galois group Gal(E/F), demonstrating that polynomial equations of degree 5 or higher are not generally solvable by algebraic radicals.",
+      "strategy": "formal_reasoning",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "discrete_logic_03",
+      "category": "discrete_math_and_logic",
+      "text": "The Curry-Howard correspondence establishes a direct isomorphism between formal logical systems and computational type theories: propositions correspond to types, logical proofs correspond to terminating computer programs, and proof reduction corresponds to evaluation.",
+      "strategy": "formal_reasoning",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "discrete_logic_04",
+      "category": "discrete_math_and_logic",
+      "text": "In spectral graph theory, Cheeger's inequality bounds the graph conductance h(G) via the second smallest eigenvalue of the normalized Laplacian: lambda_2 / 2 <= h(G) <= sqrt(2 * lambda_2), linking combinatorial bottlenecks directly to continuous diffusion rates.",
+      "strategy": "formal_reasoning",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "biology_med_00",
+      "category": "biology_and_medicine",
+      "text": "The CRISPR-Cas9 endonuclease initiates targeted double-strand DNA breaks by scanning genomic loci for a 5'-NGG-3' PAM sequence, subsequently unwinding the adjacent duplex to form a guide-RNA/DNA R-loop heteroduplex activating the RuvC and HNH nuclease domains.",
+      "strategy": "biochemical_dynamics",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "biology_med_01",
+      "category": "biology_and_medicine",
+      "text": "The generation and propagation of neuronal action potentials in unmyelinated axons is described by the Hodgkin-Huxley conductance equations, governed by time- and voltage-dependent activation of Na+ channels and delayed-rectifier K+ channels.",
+      "strategy": "biochemical_dynamics",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "biology_med_02",
+      "category": "biology_and_medicine",
+      "text": "Enzyme kinetics under the Michaelis-Menten steady-state approximation yields reaction velocity v = (V_max * [S]) / (K_m + [S]), where the Michaelis constant K_m reflects the substrate concentration at which the catalytic rate reaches half its maximum.",
+      "strategy": "biochemical_dynamics",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "biology_med_03",
+      "category": "biology_and_medicine",
+      "text": "In allosteric enzyme regulation and multi-subunit receptor binding, the Hill equation fractional saturation theta = [L]^n / (K_d + [L]^n) demonstrates how positive cooperativity (Hill coefficient n > 1) transforms graded chemical inputs into ultra-sensitive, switch-like sigmoidal metabolic response curves.",
+      "strategy": "biochemical_dynamics",
+      "estimated_tension": "medium"
+    },
+    {
+      "id": "counterfactual_00",
+      "category": "counterfactual_axiomatic",
+      "text": "Hypothesize an alternative physical universe governed by non-Euclidean hyperbolic geometry where the parallel postulate is negated:\nThrough any point not on a line, there exist infinitely many distinct parallel lines. Derive from the Gauss-Bonnet theorem why the sum of interior angles in any triangle must be strictly less than pi, and explain how the area of a hyperbolic polygon is directly proportional to its angular defect.",
+      "strategy": "axiom_inversion",
+      "estimated_tension": "maximum"
+    },
+    {
+      "id": "counterfactual_01",
+      "category": "counterfactual_axiomatic",
+      "text": "Consider an operating system kernel architecture where physical memory addresses are addressed using a 128-bit linear single-level store without virtual memory page tables or Translation Lookaside Buffers (TLB). Analyze how spatial memory isolation, permission validation, and cache-line invalidation would be enforced strictly through capabilities and hardware tags.",
+      "strategy": "axiom_inversion",
+      "estimated_tension": "maximum"
+    },
+    {
+      "id": "counterfactual_02",
+      "category": "counterfactual_axiomatic",
+      "text": "Suppose a computational model where binary floating-point representations do not support subnormal numbers or NaN values, saturating instead to maximum finite bounds with fixed precision rounding. Analyze how catastrophic cancellation and numerical gradient instability would affect backpropagation in deep neural networks.",
+      "strategy": "axiom_inversion",
+      "estimated_tension": "maximum"
+    },
+    {
+      "id": "counterfactual_03",
+      "category": "counterfactual_axiomatic",
+      "text": "Представьте математическую систему линейной алгебры, в которой умножение матриц является коммутативным: A * B = B * A для всех квадратных матриц. Докажите, к какому вырождению спектральной теории операторов и геометрических поворотов в трехмерном пространстве SO(3) это приводит.",
+      "strategy": "axiom_inversion",
+      "estimated_tension": "maximum"
+    },
+    {
+      "id": "counterfactual_04",
+      "category": "counterfactual_axiomatic",
+      "text": "Hypothesize a computer architecture where memory access latency is uniformly zero clock cycles across the entire address space, but the arithmetic logic unit (ALU) latency scales exponentially with bit-width: T(w) = O(2^(w/16)). Deduce how compiler instruction scheduling, register allocation, and loop unrolling strategies must fundamentally invert their standard trade-offs.",
+      "strategy": "axiom_inversion",
+      "estimated_tension": "maximum"
+    },
+    {
+      "id": "syllogism_00",
+      "category": "multi_hop_syllogism",
+      "text": "Evaluate the following multi-hop formal deductive argument:\nPremise 1: Any irreducible, aperiodic Markov chain on a finite state space admits a unique stationary distribution pi.\nPremise 2: The total variation distance to stationarity is bounded by the spectral expansion gap gamma = 1 - lambda_2.\nPremise 3: A graph perturbation decreases edge cut capacities, causing the normalized Laplacian second eigenvalue lambda_2 to approach 1.\nPremise 4: The mixing time tau(epsilon) is proportional to 1 / gamma * ln(1 / (epsilon * min(pi))).\nDeduce the exact asymptotic impact of the perturbation on the convergence rate of random walks on this network.",
+      "strategy": "deductive_chain",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "syllogism_01",
+      "category": "multi_hop_syllogism",
+      "text": "Trace the causal dependency chain in operating systems storage architecture:\nStep 1: A user process invokes the write() system call on a memory-mapped file descriptor.\nStep 2: The virtual memory subsystem marks the corresponding page table entry as dirty without immediate synchronous I/O.\nStep 3: A background kernel flusher thread initiates asynchronous writeback to block storage.\nStep 4: The filesystem journal records metadata transactions before committing inode block pointers.\nExplain how write barriers and journaling prevent filesystem corruption during sudden power termination.",
+      "strategy": "deductive_chain",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "syllogism_02",
+      "category": "multi_hop_syllogism",
+      "text": "Проследите цепочку логических выводов в теории групп и дифференциальной геометрии:\nПосылка 1: Группа Ли G является гладким дифференцируемым многообразием, снабженным групповыми операциями.\nПосылка 2: Касательное пространство в единице группы T_e G образует алгебру Ли g с билинейным коммутатором [X, Y].\nПосылка 3: Экспоненциальное отображение exp: g -> G переводит элементы алгебры в однопараметрические подгруппы.\nВыведите, почему локальная геометрия и свойства симметрии группы Ли полностью определяются структурой её алгебры Ли.",
+      "strategy": "deductive_chain",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "russian_science_00",
+      "category": "russian_scientific_prose",
+      "text": "Основная теорема анализа и формула Ньютона — Лейбница утверждают, что определённый интеграл от непрерывной функции на замкнутом отрезке равен разности значений её первообразной на границах: интеграл от a до b f(x)dx = F(b) - F(a).",
+      "strategy": "multilingual_monolingual_russian",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "russian_science_01",
+      "category": "russian_scientific_prose",
+      "text": "Принцип наименьшего действия Гамильтона — Остроградского постулирует, что истинная траектория механической системы сообщает функционалу действия S = интеграл от t1 до t2 L(q, q_dot, t)dt стационарное значение: вариация delta S = 0.",
+      "strategy": "multilingual_monolingual_russian",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "russian_science_02",
+      "category": "russian_scientific_prose",
+      "text": "В теории функций комплексного переменного теорема Коши о вычетах позволяет вычислять контурные интегралы замкнутого контура через сумму вычетов аналитической функции во внутренних изолированных особых точках: контурный интеграл f(z)dz = 2*pi*i * sum Res(f, z_k).",
+      "strategy": "multilingual_monolingual_russian",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "russian_science_03",
+      "category": "russian_scientific_prose",
+      "text": "В статистической физике каноническое распределение Гиббса определяет вероятность нахождения системы в квантовом состоянии с энергией E как P = (1 / Z) * exp(-E / (k_B * T)), где Z представляет собой статистическую сумму по всем доступным микросостояниям.",
+      "strategy": "multilingual_monolingual_russian",
+      "estimated_tension": "high"
+    },
+    {
+      "id": "russian_science_04",
+      "category": "russian_scientific_prose",
+      "text": "Колмогоровская сложность дискретного объекта (битовой строки) определяется как длина наименьшей компьютерной программы на универсальной машине Тьюринга, способной восстановить и сгенерировать данный объект без потери информации.",
+      "strategy": "multilingual_monolingual_russian",
+      "estimated_tension": "high"
+    }
+  ]
+}

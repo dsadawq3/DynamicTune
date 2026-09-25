@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "faytuna-emergent-flow"
+version = "0.1.0"
+description = "Model-independent emergent-flow transport and constrained weight surgery"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+torch = ["torch>=2.0"]
+
+[project.scripts]
+faytuna-flow = "faytuna_flow.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

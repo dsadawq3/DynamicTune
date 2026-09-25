@@ -1,0 +1,181 @@
+{
+  "student_model": "C:\\models\\Qwen3.5-0.8B-Base",
+  "teacher_model": "C:\\models\\Qwen3.5-4B-Base",
+  "gain_alpha": 0.08,
+  "n_charts": 4,
+  "pre_eval": {
+    "mean_nll": 1.619973063468933,
+    "ppl": 5.052954205672757,
+    "total_tokens": 89
+  },
+  "post_eval": {
+    "mean_nll": 1.6277529001235962,
+    "ppl": 5.092418678541116,
+    "total_tokens": 89
+  },
+  "pre_benchmark": {
+    "in_domain_stem": {
+      "mean_nll": 1.619973063468933,
+      "ppl": 5.052954205672757,
+      "total_tokens": 89
+    },
+    "ood_history_humanities": {
+      "mean_nll": 2.0103719234466553,
+      "ppl": 7.466093646283828,
+      "total_tokens": 81
+    },
+    "ood_medicine_biology": {
+      "mean_nll": 1.7798938751220703,
+      "ppl": 5.929227146693875,
+      "total_tokens": 83
+    },
+    "ood_reasoning_commonsense": {
+      "mean_nll": 2.508533000946045,
+      "ppl": 12.286891973915605,
+      "total_tokens": 87
+    },
+    "ood_multilingual_russian": {
+      "mean_nll": 2.453164577484131,
+      "ppl": 11.625077027629706,
+      "total_tokens": 108
+    },
+    "global": {
+      "mean_nll": 2.0936005927090133,
+      "ppl": 8.114078121357558,
+      "total_tokens": 448
+    }
+  },
+  "post_benchmark": {
+    "in_domain_stem": {
+      "mean_nll": 1.6277529001235962,
+      "ppl": 5.092418678541116,
+      "total_tokens": 89
+    },
+    "ood_history_humanities": {
+      "mean_nll": 1.9871793985366821,
+      "ppl": 7.294928630168424,
+      "total_tokens": 81
+    },
+    "ood_medicine_biology": {
+      "mean_nll": 1.705353021621704,
+      "ppl": 5.503328118144771,
+      "total_tokens": 83
+    },
+    "ood_reasoning_commonsense": {
+      "mean_nll": 2.4880995750427246,
+      "ppl": 12.038376336841074,
+      "total_tokens": 87
+    },
+    "ood_multilingual_russian": {
+      "mean_nll": 2.242614269256592,
+      "ppl": 9.417920111543816,
+      "total_tokens": 108
+    },
+    "global": {
+      "mean_nll": 2.022417063159602,
+      "ppl": 7.556567579075844,
+      "total_tokens": 448
+    }
+  },
+  "delta_nll": 0.007779836654663086,
+  "percent_change": 0.4802448157998205,
+  "status": "IMPROVED",
+  "suite_comparisons": {
+    "in_domain_stem": {
+      "pre_nll": 1.619973063468933,
+      "post_nll": 1.6277529001235962,
+      "pre_ppl": 5.052954205672757,
+      "post_ppl": 5.092418678541116,
+      "delta_nll": 0.007779836654663086,
+      "pct_change": 0.4802448157998205,
+      "status": "DEGRADED"
+    },
+    "ood_history_humanities": {
+      "pre_nll": 2.0103719234466553,
+      "post_nll": 1.9871793985366821,
+      "pre_ppl": 7.466093646283828,
+      "post_ppl": 7.294928630168424,
+      "delta_nll": -0.023192524909973145,
+      "pct_change": -1.1536434944938463,
+      "status": "IMPROVED"
+    },
+    "ood_medicine_biology": {
+      "pre_nll": 1.7798938751220703,
+      "post_nll": 1.705353021621704,
+      "pre_ppl": 5.929227146693875,
+      "post_ppl": 5.503328118144771,
+      "delta_nll": -0.07454085350036621,
+      "pct_change": -4.187938086772391,
+      "status": "IMPROVED"
+    },
+    "ood_reasoning_commonsense": {
+      "pre_nll": 2.508533000946045,
+      "post_nll": 2.4880995750427246,
+      "pre_ppl": 12.286891973915605,
+      "post_ppl": 12.038376336841074,
+      "delta_nll": -0.020433425903320312,
+      "pct_change": -0.8145567905869382,
+      "status": "IMPROVED"
+    },
+    "ood_multilingual_russian": {
+      "pre_nll": 2.453164577484131,
+      "post_nll": 2.242614269256592,
+      "pre_ppl": 11.625077027629706,
+      "post_ppl": 9.417920111543816,
+      "delta_nll": -0.21055030822753906,
+      "pct_change": -8.582804030354588,
+      "status": "IMPROVED"
+    },
+    "global": {
+      "pre_nll": 2.0936005927090133,
+      "post_nll": 2.022417063159602,
+      "pre_ppl": 8.114078121357558,
+      "post_ppl": 7.556567579075844,
+      "delta_nll": -0.07118352954941143,
+      "pct_change": -3.400052989921231,
+      "status": "IMPROVED"
+    }
+  },
+  "layers_modified": [
+    {
+      "layer": 0,
+      "teacher_layer": 0,
+      "entropy": 0.7153354887957808,
+      "knot": false,
+      "curvature_ratio": 1.0059092357446777,
+      "down_update_norm": 0.039145810586172294,
+      "accepted": true,
+      "holdout_nll": 1.5715585947036743
+    },
+    {
+      "layer": 1,
+      "teacher_layer": 1,
+      "entropy": 0.9274083903648644,
+      "knot": false,
+      "curvature_ratio": 1.0014049835603336,
+      "down_update_norm": 0.03956255151934895,
+      "accepted": true,
+      "holdout_nll": 1.5748742818832397
+    },
+    {
+      "layer": 2,
+      "teacher_layer": 3,
+      "entropy": 0.9432151761793208,
+      "knot": false,
+      "curvature_ratio": 0.9992473694129478,
+      "down_update_norm": 0.03792231689261701,
+      "accepted": true,
+      "holdout_nll": 1.574989676475525
+    },
+    {
+      "layer": 3,
+      "teacher_layer": 4,
+      "entropy": 0.9524835584865703,
+      "knot": false,
+      "curvature_ratio": 0.9923522791945394,
+      "down_update_norm": 0.03720676909958208,
+      "accepted": true,
+      "holdout_nll": 1.5750643014907837
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+[
+  {
+    "transition_index": 0,
+    "tensor_name": "transformer.h.0.mlp.c_proj.weight",
+    "side": "output",
+    "block_index": 0
+  },
+  {
+    "transition_index": 6,
+    "tensor_name": "transformer.h.6.mlp.c_proj.weight",
+    "side": "output",
+    "block_index": 6
+  }
+]

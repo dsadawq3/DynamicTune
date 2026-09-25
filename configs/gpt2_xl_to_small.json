@@ -1,0 +1,43 @@
+{
+  "schema_version": "faytuna-model-family-manifest-v1",
+  "name": "gpt2-xl-to-small",
+  "meaning": "first practical backend preset",
+  "teacher": {
+    "name": "gpt2-xl",
+    "model_type": "gpt2",
+    "n_layer": 48,
+    "n_embd": 1600,
+    "n_head": 25,
+    "n_positions": 1024,
+    "vocab_size": 50257,
+    "repository_id": "openai-community/gpt2-xl"
+  },
+  "student": {
+    "name": "gpt2-small",
+    "model_type": "gpt2",
+    "n_layer": 12,
+    "n_embd": 768,
+    "n_head": 12,
+    "n_positions": 1024,
+    "vocab_size": 50257,
+    "repository_id": "openai-community/gpt2"
+  },
+  "observation_stage": {
+    "backend": "HF/PyTorch",
+    "connector": "GPT2Connector",
+    "state_chart": "flattened [batch=1, sequence, hidden]",
+    "requires_explicit_probe_policy": true,
+    "hidden_traces": true,
+    "residual_traces": false,
+    "residual_trace_reason": "GPT2Connector has no explicit residual-branch callback; post-layer hidden is not labeled residual"
+  },
+  "runtime_validation_stage": {
+    "backend": "unmodified llama.cpp",
+    "requires": ["ordinary exported checkpoint", "GPT-2 capable convert_hf_to_gguf.py", "llama-cli", "optional llama-perplexity"],
+    "hidden_state_instrumentation": false
+  },
+  "claims": {
+    "semantic_transfer_proven": false,
+    "rename_to_latune_done": false
+  }
+}
