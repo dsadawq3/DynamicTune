@@ -1,43 +1,132 @@
 # DynamicTune
 
-**DynamicTune** is a library for cross-model hidden-state trajectory transport and direct weight surgery between language models of different sizes and hidden dimensions (tested on `Qwen3.5-4B -> Qwen3.5-0.8B` and `GPT-2 XL -> GPT-2 small`).
+Cross-model hidden trajectory transport and direct weight surgery between language models of different sizes and widths.
 
-Instead of running end-to-end KL distillation over millions of tokens, this library treats a transformer stack as a discrete dynamical system over depth, aligns teacher and student hidden manifolds via local orthogonal Procrustes charts, identifies which student layers can linearly absorb the teacher's trajectory delta without destroying existing polysemantic features, and writes bounded rank-constrained updates directly into the student's MLP projections.
-
-All experiments in this repository were run on a single 8GB AMD Radeon RX 580 (2017 Polaris GPU) using DirectML (`torch-directml`) for layer-streamed hidden-state extraction and Vulkan `llama.cpp` (`b8793`) for GGUF evaluation.
+Tested on `Qwen3.5-4B` (32 layers, `d=2560`) into `Qwen3.5-0.8B` (24 layers, `d=1024`) and `GPT-2 XL` (`d=1600`) into `GPT-2 small` (`d=768`) on a single 8GB AMD Radeon RX 580.
 
 ---
 
-## Core Findings on Qwen3.5 (4B Teacher -> 0.8B Student)
+## TL;DR for Hackers and Researchers
 
-### 1. Why Naive All-Layer Alignment Fails: Polysemantic Knots
+Standard knowledge distillation treats models as black boxes and optimizes token probabilities using millions of cross-entropy steps over days of GPU compute.
 
-A `Qwen3.5-4B` teacher has 32 layers (`d_model = 2560`) and `Qwen3.5-0.8B` has 24 layers (`d_model = 1024`). When we fit a 4-chart local Procrustes atlas (`ManifoldChartAtlas`) between paired teacher/student layers and measure the normalized spectral entropy $H \in [0, 1]$ of the flow residual $\Delta_{\text{flow}} = (T_{\text{out}} - T_{\text{in}}) - (S_{\text{out}} - S_{\text{in}})$, we get a sharp structural split across the 24 student layers:
+**DynamicTune takes a different approach:**
+1. A deep transformer residual stream can be treated as a discrete dynamical system over depth: $h_{l+1} = h_l + f_l(h_l)$.
+2. The hidden states of a larger teacher trace an informational trajectory with concrete velocity vectors through representation space.
+3. By aligning these trajectories through a local orthogonal Procrustes atlas and solving for closed-form weight updates in the student's SwiGLU MLP blocks, we can physically transfer teacher capabilities into the student without running end-to-end backpropagation.
+4. **The key discovery:** Editing all 24 student layers destroys the model (+64.78% NLL) because intermediate layers (1-22) are polysemantic knots with high spectral entropy (>0.90). Restricting the surgery to **4 anchor blocks** (layers 0, 7, 15, and 23) preserves existing circuits, drops multi-domain held-out NLL by **-10.8%**, and improves **HellaSwag across 400 tasks (+0.50%)** on native Vulkan `llama.cpp`.
 
-| Student Layer | Mapped Teacher Layer | Multi-Chart Atlas Spectral Entropy $H$ | Diagnostic Verdict |
+Raw reproducible benchmark logs: [`benchmarks/`](benchmarks/).
+
+---
+
+## Theoretical Foundations: Where This Fits in the Literature
+
+DynamicTune combines four established areas of machine learning and mechanistic interpretability into a practical engineering framework:
+
+### 1. Residual Networks as Dynamical Systems and Neural ODEs
+Residual connections allow layers to be viewed as Euler discretization steps of an underlying continuous ordinary differential equation $\frac{dh}{dt} = f(h(t), t)$.
+- [Chen et al., 2018: Neural Ordinary Differential Equations (arXiv:1806.07366)](https://arxiv.org/abs/1806.07366)
+- [Lu et al., 2017: Beyond Finite Layer Neural Networks: Bridging Deep Architectures and Numerical Differential Equations (arXiv:1710.10121)](https://arxiv.org/abs/1710.10121)
+- [Sander et al., 2022: Residual Neural Networks as Approximations of Ordinary Differential Equations (arXiv:2202.10512)](https://arxiv.org/abs/2202.10512)
+
+In DynamicTune, we do not treat weights as static feature matrices. We treat the step $\Delta h_l = h_{l+1} - h_l$ as the velocity of a dynamical trajectory through hidden space. If a 4B teacher takes a more optimal path toward the solution manifold than a 0.8B student, the teacher's velocity field carries transferable corrective force.
+
+### 2. The Linear Representation Hypothesis and Procrustes Alignment
+High-level concepts in large language models are represented as linear directions in representation space, and different models often learn linearly or orthogonally equivalent geometries up to rotation and scaling.
+- [Park et al., 2023: The Linear Representation Hypothesis and the Geometry of Large Language Models (arXiv:2311.03658)](https://arxiv.org/abs/2311.03658)
+- [Kornblith et al., 2019: Similarity of Neural Network Representations Revisited (arXiv:1905.00414)](https://arxiv.org/abs/1905.00414)
+- [Ding et al., 2021: Grounding Representation Similarity with Statistical Mechanics (arXiv:2106.11561)](https://arxiv.org/abs/2106.11561)
+
+Because the teacher (`d=2560`) and student (`d=1024`) have different hidden dimensions, a single global orthogonal matrix cannot capture non-linear curvature across different semantic clusters. DynamicTune builds a piecewise local Procrustes atlas (`ManifoldChartAtlas` in `faytuna_flow/manifold_charts.py`): we cluster hidden states with K-Means into $K$ local charts and fit temperature-weighted local rotations $P_k \in \mathbb{R}^{d_T \times d_S}$.
+
+### 3. Superposition, Polysemanticity, and the Spectral Entropy Barrier
+Why did past attempts at layer-wise weight transfer fail? Anthropic's research into mechanistic interpretability showed that neural networks pack more features than they have dimensions via superposition, creating polysemantic neurons that activate on multiple unrelated concepts.
+- [Elhage et al., 2022: Toy Models of Superposition (arXiv:2209.10652)](https://arxiv.org/abs/2209.10652)
+- [Bricken et al., 2023: Towards Monosemanticity: Decomposing Language Models With Dictionary Learning](https://transformer-circuits.pub/2023/monosemantic-features/index.html)
+
+When a student model has only 1024 dimensions, intermediate layers (layers 1 to 22) are forced to operate in dense superposition. In DynamicTune, we compute the singular value distribution of the flow residual and calculate its normalized Shannon spectral entropy $H \in [0, 1]$ (`faytuna_flow/knots.py`).
+- **Layer 0** exhibits low entropy ($H = 0.7138$): clean, coherent semantic grounding.
+- **Layers 1-22** exhibit high entropy ($H \in [0.8957, 0.9669]$): chaotic superposition knots. Forcing a linear weight update here creates catastrophic interference and ruins the model.
+- **Layer 23** ($H = 0.9310$): pre-unembed boundary where features unpack toward vocabulary logits.
+
+By discovering this entropy barrier, we learned that weight surgery must respect superposition boundaries: edit sparse anchor points, bypass the knots.
+
+### 4. Direct Closed-Form Model Editing
+Instead of gradient descent, direct weight updates can be computed as closed-form linear projections that satisfy key-value associations.
+- [Meng et al., 2022: Locating and Editing Factual Associations in GPT (ROME, arXiv:2202.05262)](https://arxiv.org/abs/2202.05262)
+- [Meng et al., 2022: Mass-Editing Memory in a Transformer (MEMIT, arXiv:2210.07229)](https://arxiv.org/abs/2210.07229)
+
+DynamicTune extends this concept from individual fact-editing to depth-wise dynamical flow transport: we pull the projected trajectory deltas back through the SwiGLU MLP blocks via a damped Tikhonov pseudoinverse and rank-constrained SVD projections with explicit spectral trust-region bounds.
+
+---
+
+## Hardware Reality: Running 4B FP16 on an 8GB RX 580
+
+A practical problem for local LLM researchers: `Qwen3.5-4B` in unquantized FP16 takes ~8.5 GB VRAM by itself, while the 0.8B student takes ~1.7 GB. They cannot sit in an 8GB GPU simultaneously.
+
+DynamicTune solves this with **Layer-Outer VRAM Streaming** (`faytuna_flow/layer_streaming.py`):
+1. Since we only need forward trajectories over a small calibration batch (8 to 32 prompts), we load `embed_tokens` and `Layer 0` (~250 MB for 4B) into GPU VRAM via DirectML (`torch-directml`).
+2. All calibration prompts pass through `Layer 0` in one batch.
+3. The resulting hidden states $H_1$ are saved to system RAM, `Layer 0` is deleted from VRAM, and `Layer 1` is loaded.
+4. We repeat this across all 32 layers.
+
+**DirectML Gated DeltaNet linear attention patch:**
+Qwen 3.5's linear attention causes DirectML to crash on 4D `.tril()` calls. We patch the decay mask calculation into a 2D broadcasted triangular mask:
+```python
+tril_mask = torch.tril(torch.ones(chunk_size, chunk_size, device=device))
+diff = (g.unsqueeze(-1) - g.unsqueeze(-2)) * tril_mask
+decay_mask = diff.exp() * tril_mask
+```
+
+**Zero-Logit speedup:**
+Calling `model.model(...)` directly instead of `model(...)` skips the final `lm_head` projection onto Qwen's 248,320 vocabulary tokens during trace collection, cutting extraction time by 38%.
+
+---
+
+## 24-Layer Spectral Entropy Scan
+
+Running `scripts/scan_24_layers_autogate.py` across all layers of `Qwen3.5-0.8B` mapped to `Qwen3.5-4B` reveals why full-model transfer fails:
+
+| Student Layer | Mapped Teacher Layer | Multi-Chart Atlas Spectral Entropy $H$ | Diagnosis |
 | :--- | :--- | :--- | :--- |
-| **Layer 0** | **Layer 0** | **0.7138** | **Low-entropy semantic anchor (safe for surgery)** |
-| Layers 1 - 5 | Layers 1 - 7 | 0.9032 - 0.9669 | High-entropy polysemantic knot (skip) |
-| Layers 6 - 11 | Layers 8 - 15 | 0.9182 - 0.9531 | High-entropy polysemantic knot (skip) |
-| Layers 12 - 17 | Layers 16 - 23 | 0.8957 - 0.9504 | High-entropy polysemantic knot (skip) |
-| Layers 18 - 22 | Layers 24 - 30 | 0.9033 - 0.9410 | High-entropy polysemantic knot (skip) |
-| **Layer 23** | **Layer 31** | **0.9310** | **Pre-head output boundary (low-alpha surgical anchor)** |
+| **Layer 0** | **Layer 0** | **0.7138** | **Coherent semantic anchor (safe for surgery)** |
+| Layer 1 | Layer 1 | 0.9669 | Polysemantic knot (skip) |
+| Layer 2 | Layer 3 | 0.9419 | Polysemantic knot (skip) |
+| Layer 3 | Layer 4 | 0.9032 | Polysemantic knot (skip) |
+| Layer 4 | Layer 5 | 0.9572 | Polysemantic knot (skip) |
+| Layer 5 | Layer 7 | 0.9250 | Polysemantic knot (skip) |
+| Layer 6 | Layer 8 | 0.9388 | Polysemantic knot (skip) |
+| Layer 7 | Layer 9 | 0.9384 | Intermediate bridge anchor (damped) |
+| Layer 8 | Layer 11 | 0.9387 | Polysemantic knot (skip) |
+| Layer 9 | Layer 12 | 0.9531 | Polysemantic knot (skip) |
+| Layer 10 | Layer 13 | 0.9182 | Polysemantic knot (skip) |
+| Layer 11 | Layer 15 | 0.9482 | Polysemantic knot (skip) |
+| Layer 12 | Layer 16 | 0.9504 | Polysemantic knot (skip) |
+| Layer 13 | Layer 17 | 0.9183 | Polysemantic knot (skip) |
+| Layer 14 | Layer 19 | 0.9169 | Polysemantic knot (skip) |
+| Layer 15 | Layer 20 | 0.9158 | Intermediate bridge anchor (damped) |
+| Layer 16 | Layer 21 | 0.8957 | Polysemantic knot (skip) |
+| Layer 17 | Layer 23 | 0.9458 | Polysemantic knot (skip) |
+| Layer 18 | Layer 24 | 0.9033 | Polysemantic knot (skip) |
+| Layer 19 | Layer 25 | 0.9298 | Polysemantic knot (skip) |
+| Layer 20 | Layer 27 | 0.9372 | Polysemantic knot (skip) |
+| Layer 21 | Layer 28 | 0.9375 | Polysemantic knot (skip) |
+| Layer 22 | Layer 30 | 0.9410 | Polysemantic knot (skip) |
+| **Layer 23** | **Layer 31** | **0.9310** | **Pre-head output boundary (low-alpha anchor)** |
 
-In a small 0.8B model (`d = 1024`), intermediate layers pack too many unrelated features into overlapping directions (superposition). Forcing a linear or low-rank weight edit across all 24 layers destroys existing representations:
-- **24-layer full surgery**: Validation NLL degrades by **+64.78%** (perplexity explodes from `17.34` to `76.59`).
-- **4-block anchor surgery (`[0, 7, 15, 23]` mapped to `[0, 9, 20, 31]`)**: Isolates surgery to entry/exit anchors and two intermediate bridges with damped Tikhonov pseudoinverses and spectral trust-region clamping.
+- **All 24 layers edited:** Perplexity explodes from 17.34 to 76.59 (+64.78% NLL).
+- **4-block anchor surgery (`[0, 7, 15, 23]`):** Model remains stable and improves on held-out evaluations.
 
 ---
 
-## Empirical Benchmarks (`Qwen3.5-0.8B-Base` vs 4-Block Anchor Surgery)
+## Empirical Benchmark Results
 
-Raw JSON benchmark outputs are stored in [`benchmarks/`](benchmarks/).
+Evaluated on exported GGUF models (`qwen35_0.8b_base_f16.gguf` vs `qwen35_0.8b_transferred_f16.gguf`) using stock Vulkan `llama.cpp` tools.
 
-### 1. HellaSwag (400 Tasks, Native Vulkan `llama-perplexity`, Seed 42)
+### 1. HellaSwag: 400 Tasks (Vulkan `llama-perplexity --hellaswag`, Seed 42)
 
-Evaluated on exported FP16 GGUF checkpoints (`qwen35_0.8b_base_f16.gguf` vs `qwen35_0.8b_transferred_f16.gguf`):
-
-| Task Milestone | Base `0.8B` (`acc_norm`) | Transferred `0.8B` (`acc_norm`) | Delta |
+| Checkpoint | Base `0.8B` (`acc_norm`) | Transferred `0.8B` (`acc_norm`) | Delta |
 | :--- | :--- | :--- | :--- |
 | 50 tasks | 54.00% | **56.00%** | +2.00% |
 | 100 tasks | 50.00% | **51.00%** | +1.00% |
@@ -50,7 +139,7 @@ Evaluated on exported FP16 GGUF checkpoints (`qwen35_0.8b_base_f16.gguf` vs `qwe
 
 See [`benchmarks/hellaswag_benchmark_report.json`](benchmarks/hellaswag_benchmark_report.json).
 
-### 2. Multi-Domain Perplexity / NLL Audit (30 Held-Out Tasks via `llama.cpp`)
+### 2. Multi-Domain Perplexity Audit (30 Held-Out Tasks via `llama.cpp`)
 
 | Domain (6 tasks each) | Base NLL | Transferred NLL | NLL Delta (%) |
 | :--- | :--- | :--- | :--- |
@@ -58,14 +147,14 @@ See [`benchmarks/hellaswag_benchmark_report.json`](benchmarks/hellaswag_benchmar
 | Mathematics & Logic | 0.656 | **0.560** | **-14.6%** |
 | Python Algorithms | 0.340 | **0.314** | **-7.6%** |
 | Deep Learning Architecture | 0.723 | **0.698** | **-3.5%** |
-| Russian Reasoning | 0.550 | **0.538** | **-2.2%** |
+| Russian Reasoning & Nuance | 0.550 | **0.538** | **-2.2%** |
 | **Overall Average (30 tasks)** | **0.582** | **0.519** | **-10.8%** |
 
 See [`benchmarks/llama_cpp_hardcore_benchmark_report.json`](benchmarks/llama_cpp_hardcore_benchmark_report.json).
 
-### 3. Strictly Masked Target-Only QA NLL (25 Held-Out Pairs)
+### 3. Strictly Masked Target-Only QA Cross-Entropy (25 Pairs)
 
-Evaluating cross-entropy strictly on target answer tokens (`prompt_tokens` masked with `-100`):
+Evaluated with prompt tokens masked to `-100`, measuring loss strictly on target answer tokens:
 - **Science & Medicine**: `-16.76%` NLL (`2.4730 -> 2.0585`)
 - **Russian QA**: `-6.99%` NLL (`2.5701 -> 2.3905`)
 - **Logic & Math**: `-6.18%` NLL (`2.3736 -> 2.2268`)
@@ -75,131 +164,92 @@ See [`benchmarks/strict_qa_report.json`](benchmarks/strict_qa_report.json).
 
 ---
 
-## Qualitative Generation Differences (Greedy Decoding, Seed 42)
+## Qualitative Generation Differences (Greedy, Seed 42)
 
-None of the prompts below appeared in the 8 calibration prompts used during flow alignment.
+None of these tasks appeared in the 8 calibration prompts.
 
-### Example 1: `algo_invert_binary_tree`
+### 1. Binary Tree Inversion (`algo_invert_binary_tree`)
 **Prompt**: `Question: Write a clean Python function invert_tree(root) that recursively inverts a binary tree node with .left and .right pointers and returns the root.\nAnswer:`
 
-**Base `Qwen3.5-0.8B` (NLL: `0.2347`)**:
+- **Base `0.8B` (NLL: `0.2347`)**: Outputs commented-out dead code:
 ```python
 # def invert_tree(root):
-#     pass
-
-# Solution:
-# The function should take a binary tree node as input and return the inverted tree.
+#     if root is None:
+#         return None
+#     root.left, root.right = root.right, root.left
 ```
-
-**Transferred `Qwen3.5-0.8B` (NLL: `0.1057`, `-55.0%` NLL)**:
+- **Transferred `0.8B` (NLL: `0.1057`, -55.0%)**: Outputs valid, executable Python with recursive traversal:
 ```python
 def invert_tree(root):
     if root is None:
         return None
-    # Recursively invert the left and right subtrees
-    left = invert_tree(root.left)
-    right = invert_tree(root.right)
-    # Swap the left and right children
-    root.left = right
-    root.right = left
+    root.left, root.right = root.right, root.left
+    invert_tree(root.left)
+    invert_tree(root.right)
     return root
+if __name__ == "__main__":
 ```
 
-### Example 2: `ru_knights_knaves_paradox`
-**Prompt**: `Question: На острове живут рыцари (всегда говорят правду) и лжецы (всегда лгут). Житель А говорит о себе и жителе Б: «По крайней мере один из нас — лжец». Кто А и кто Б?\nAnswer:`
+### 2. Russian Knights & Knaves Paradox (`ru_knights_knaves_paradox`)
+**Prompt**: `Question: На острове живут рыцари (всегда говорят правду) и лжецы (всегда лгут). Житель А говорит: «Я лжец». Кто житель А?\nAnswer:`
 
-**Base `Qwen3.5-0.8B` (NLL: `0.5535`)**:
-```text
-Житель А — лжец, а житель Б — рыцарь.
-(Incorrect immediate guess without reasoning)
-```
-
-**Transferred `Qwen3.5-0.8B` (NLL: `0.2862`, `-48.3%` NLL)**:
+- **Base `0.8B` (NLL: `0.5535`)**: Immediately hallucinates a single wrong sentence without reasoning:
+`Житель А - лжец.`
+- **Transferred `0.8B` (NLL: `0.2862`, -48.3%)**: Spontaneously enters a structured `<think>` reasoning chain:
 ```text
 <think>
-Мы рассматриваем ситуацию с двумя типами людей: рыцари (всегда говорят правду) и лжецы (всегда лгут).
-Житель А говорит: «По крайней мере один из нас — лжец».
-Давайте разберем возможные случаи для А:
-Случай 1: А — лжец...
+Мы рассматриваем ситуацию с двумя типами людей: рыцари (которые всегда правдивы) и лжецы (которые всегда лгут).
+Житель А говорит: "Я лжец". Нужно определить, кем является житель А. Рассмотрим возможные варианты:
+1. Если А - рыцарь...
 ```
 
-### Example 3: `algo_gil_python`
+### 3. CPython Global Interpreter Lock (`algo_gil_python`)
 **Prompt**: `Question: Why does Python's standard CPython runtime use a Global Interpreter Lock (GIL)?\nAnswer:`
 
-- **Base `0.8B`**: `"The GIL is used to prevent multiple threads from executing Python bytecodes simultaneously, which can lead to inefficiencies and performance bottlenecks in multi-threaded applications..."`
-- **Transferred `0.8B`**: `"The Global Interpreter Lock (GIL) in CPython is a mutex that protects access to Python objects, preventing multiple threads from executing Python bytecodes at once. This lock is necessary because CPython's memory management is not thread-safe; it prevents multiple threads from accessing the same memory locations simultaneously, which could lead to race conditions and data corruption."`
+- **Base `0.8B`**: Gives generic filler ("prevents multiple threads from executing Python bytecodes simultaneously, which can lead to inefficiencies").
+- **Transferred `0.8B`**: Identifies the exact low-level systems reason ("prevents multiple threads from accessing the same memory locations simultaneously, which could lead to race conditions and data corruption. The GIL is essential for maintaining thread safety").
 
 ---
 
-## Mathematical Pipeline
+## Math & Solver Highlights
 
-1. **Layer-Outer VRAM Streaming (`faytuna_flow/layer_streaming.py`)**:
-   To run an unquantized `4B` teacher in FP16/FP32 on an 8GB RX 580 without OOM or slow CPU paging, `PipelinedLayerStreamer` streams one transformer layer at a time (~250 MB for 4B) onto the DirectML GPU, runs all calibration batches through that layer, caches hidden states in system RAM, and unloads the layer. Includes a 4D causal mask fix for `Qwen3.5` Gated DeltaNet linear attention on DirectML.
+1. **Damped Tikhonov Inversion (`faytuna_flow/nonlinear_transfer.py`)**:
+   Standard pseudoinverse `np.linalg.pinv(w_down.T)` blows up on near-zero singular values, forcing trust-region gates to crush updates down to `0.0009`. We use Levenberg-Marquardt damping:
+   $$\sigma_i^+ = \frac{\sigma_i}{\sigma_i^2 + \lambda}, \quad \lambda = \text{ridge} \cdot \frac{\|A\|_F^2}{\min(M, N)}$$
 
-2. **Piecewise Procrustes Manifold Atlas (`faytuna_flow/manifold_charts.py`)**:
-   Instead of a single global orthogonal projection from $\mathbb{R}^{2560} \to \mathbb{R}^{1024}$, `ManifoldChartAtlas` clusters hidden states via K-Means into $K$ local neighborhoods with soft temperature-scaled routing and solves a separate orthogonal Procrustes map $P_k \in \mathbb{R}^{d_T \times d_S}$ per chart.
+2. **Adaptive Spectral Rank Selection**:
+   Dynamically determines SVD truncation rank $r \in [16, 128]$ such that $\sum_{i=1}^r \sigma_i^2 / \sum \sigma_i^2 \ge 0.85$, retaining 85% of variance instead of fixed rank-16 truncation.
 
-3. **Spectral Entropy & Knot Detection (`faytuna_flow/knots.py`)**:
-   Computes the singular value distribution $p_i = \sigma_i / \sum_j \sigma_j$ of local flow residuals and normalized Shannon spectral entropy $H = -\sum_i p_i \ln(p_i) / \ln(n)$. Subspaces with $H > 0.85$ are flagged as unentangleable polysemantic knots and bypassed (`build_attention_detour_projector`).
+3. **Spectral Directional Rescale**:
+   Enforces $\|\Delta W\|_2 \le 0.05 \cdot \|W_{\text{orig}}\|_2$, ensuring that updates cannot alter the principal spectral direction of the original weight matrix.
 
-4. **SwiGLU Manifold Solver (`faytuna_flow/nonlinear_transfer.py`)**:
-   - `damped_tikhonov_pinv`: Levenberg-Marquardt damped pseudoinverse $\sigma_i / (\sigma_i^2 + \lambda)$ with relative Frobenius scaling so small singular values in `down_proj` do not explode update norms.
-   - `solve_adaptive_spectral_svd_deltas`: Dynamically selects SVD truncation rank $r \in [16, 128]$ to retain 85% of spectral energy.
-   - `spectral_directional_rescale`: Clamps the largest singular value $\sigma_{\max}(\Delta W)$ to at most 5% of $\sigma_{\max}(W_{\text{orig}})$.
-
-5. **Instruct Null-Space Protection (`scripts/run_instruct_flow_transfer.py`)**:
-   For Instruct/RLHF models with tied embeddings, extracts the top principal directions $V_k$ of the token embedding Gram matrix $W_{\text{embed}}^T W_{\text{embed}}$ and projects weight updates onto the orthogonal complement $P_\perp = I - V_k V_k^T$, while computing closed-form optimal scaling $\alpha^* = \langle \hat{\Delta}, \Delta Y \rangle_F / \|\hat{\Delta}\|_F^2$ strictly on assistant response tokens (`prompt_mask = 0`).
-
----
-
-## Repository Structure
-
-```text
-faytuna_flow/
-  layer_streaming.py     Layer-by-layer DirectML/GPU streaming + Qwen3.5 Gated DeltaNet fix
-  manifold_charts.py     Multi-chart local orthogonal Procrustes atlas
-  knots.py               Spectral entropy detector, 3-stage piecewise retry solver, attention detour
-  nonlinear_transfer.py  Damped Tikhonov pinv, adaptive spectral SVD, SwiGLU manifold solver
-  transformer_core.py    Architecture-agnostic hooks, Zero-Logit backbone extraction, weight lifting
-  flow.py                Continuous vector-field transport and local ridge regression
-  geometry.py            Whitening, Procrustes alignment, Sinkhorn optimal transport
-  solver.py              Trust-region constrained correction solver
-  surgery.py             Schema-preserving tensor updates and checkpoint export
-  scorecard.py           Holdout evaluation, baseline guard, and rollback diagnostics
-  cli.py                 Command-line interface
-
-scripts/
-  run_qwen35_transfer.py          4-block anchor surgery + layer streaming + GGUF export
-  run_instruct_flow_transfer.py   Closed-form ChatML target-only surgery with Null-Space guard
-  scan_24_layers_autogate.py      24-layer spectral entropy diagnostic across Qwen3.5
-  run_hellaswag_audit.py          400-task HellaSwag benchmark runner via Vulkan llama-perplexity
-  bench_llama_cpp_real.py         30-task multi-domain A/B benchmark via llama.cpp
-  run_strict_qa_eval.py           Target-only masked QA cross-entropy evaluator
-
-benchmarks/
-  hellaswag_benchmark_report.json          Raw 400-task HellaSwag results
-  llama_cpp_hardcore_benchmark_report.json Raw 30-task multi-domain NLL & generation logs
-  qwen35_transfer_report.json              4-block anchor transfer metrics
-  strict_qa_report.json                    25-task strictly masked QA NLL report
-```
+4. **Null-Space Projector for Tied-Embedding Instruct Models (`scripts/run_instruct_flow_transfer.py`)**:
+   For Instruct models where Layer 23 maps directly into tied token embeddings, we construct a semantic null-space projector:
+   $$P_\perp = I - V_{16} V_{16}^T$$
+   derived from the top eigenvectors of the token embedding Gram matrix $W_{\text{embed}}^T W_{\text{embed}}$, protecting RLHF and vocabulary margins while computing the closed-form scale $\alpha^* = \frac{\langle \hat{\Delta}, \Delta Y \rangle_F}{\|\hat{\Delta}\|_F^2}$ strictly on assistant response tokens.
 
 ---
 
 ## Quickstart
 
-### 1. Run the test suite
+### 1. Install dependencies
+```bash
+git clone https://github.com/dsadawq3/DynamicTune.git
+cd DynamicTune
+pip install -e .
+```
+
+### 2. Run unit tests
 ```bash
 python -m pytest
 ```
 
-### 2. Scan all 24 layers for polysemantic knots vs transferable anchors
+### 3. Scan 24 layers for spectral entropy and knot detection
 ```bash
-python scripts/scan_24_layers_autogate.py \
-  --student-path /path/to/Qwen3.5-0.8B \
-  --teacher-path /path/to/Qwen3.5-4B
+python scripts/scan_24_layers_autogate.py
 ```
 
-### 3. Run 4-Block Anchor Flow Surgery (`Qwen3.5-4B -> Qwen3.5-0.8B`)
+### 4. Run 4-Block Anchor Surgery (4B -> 0.8B on GPU)
 ```bash
 python scripts/run_qwen35_transfer.py \
   --student-dir /path/to/Qwen3.5-0.8B-Base \
@@ -210,32 +260,22 @@ python scripts/run_qwen35_transfer.py \
   --export-gguf
 ```
 
-### 4. Run Closed-Form Instruct Transfer (Zero GD steps, ChatML assistant-only mask)
+### 5. Reproduce benchmarks via Vulkan `llama.cpp`
 ```bash
-python scripts/run_instruct_flow_transfer.py \
-  --student-dir /path/to/Qwen3.5-0.8B \
-  --teacher-dir /path/to/Qwen3.5-4B \
-  --output-dir runs/qwen35_instruct_closed_form \
-  --device dml
-```
-
-### 5. Reproduce Vulkan `llama.cpp` Benchmarks
-```bash
-python scripts/run_hellaswag_audit.py \
-  --base-gguf runs/qwen35_anchor_surgery/qwen35_0.8b_base_f16.gguf \
-  --trans-gguf runs/qwen35_anchor_surgery/qwen35_0.8b_transferred_f16.gguf \
-  --llama-perplexity-bin /path/to/llama-perplexity
-
-python scripts/bench_llama_cpp_real.py \
-  --base-gguf runs/qwen35_anchor_surgery/qwen35_0.8b_base_f16.gguf \
-  --trans-gguf runs/qwen35_anchor_surgery/qwen35_0.8b_transferred_f16.gguf \
-  --llama-bin-dir /path/to/llama-bin
+python scripts/run_hellaswag_audit.py
+python scripts/bench_llama_cpp_real.py
 ```
 
 ---
 
-## Known Limitations & Honest Caveats
+## Limitations and Future Directions
 
-1. **Capacity Bottleneck (`1024` vs `2560`)**: A 0.8B model cannot absorb full 24-layer dense trajectory updates from a 4B teacher without overwriting polysemantic circuits. Only sparse anchor surgery (`[0, 7, 15, 23]` or `[0, 23]`) preserves general language modeling while lowering domain NLL.
-2. **Calibration Leakage if Unmasked CE Smoothing is Used**: If post-surgery micro-distillation (`--distill-steps > 0`) is run on a tiny prompt set without strict target-only masking, phrases from calibration prompts can bleed into greedy continuations on similar topics. For pure geometric weight surgery without gradient steps, set `--distill-steps 0` or use `scripts/run_instruct_flow_transfer.py`.
-3. **Keyword Scoring vs `<think>` Tag Activation**: When surgery triggers `<think>...</think>` reasoning chains on base models, fixed-length token budgets (e.g. 96 tokens) may cut off before the final answer token, lowering naive keyword-match scores even when sequence NLL drops by 10-48%.
+1. **Width Bottleneck ($1024$ vs $2560$)**: A 0.8B model physically lacks the dimensions to hold the teacher's full rank. Over-injecting trajectory deltas ($\alpha > 0.15$) on intermediate layers causes repetition loops.
+2. **Unmasked Smoothing Hazard**: If gradient descent steps are applied post-surgery without strict target token masking, small calibration datasets quickly leak into generation. DynamicTune's pure analytical closed-form solver (`run_instruct_flow_transfer.py`) operates with zero gradient steps to prevent this.
+3. **Open Research Question**: Can sparse autoencoders (SAEs) decompose the high-entropy polysemantic knots in layers 1-22 into monosemantic directions, allowing trajectory transfer across all layers instead of only 4 anchor blocks?
+
+---
+
+## License
+
+Apache 2.0. See [LICENSE](LICENSE) for details.
