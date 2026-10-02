@@ -259,13 +259,24 @@ python scripts/bench_llama_cpp_real.py
 
 ---
 
-## Community, Model Requests, and Open Issues
+## Community, High-Priority Model Pairs, and Open Issues
 
-We welcome feedback, replication attempts, and ideas from the open-source community:
+We invite community members, researchers, and tinkerers with 24GB+ GPUs (RTX 3090/4090, dual GPUs, or cloud instances) to run trajectory surgery on high-demand modern model pairs:
 
-- **Testing new model pairs:** We are eager to see results on transfers like `Llama 3.1 8B -> Llama 3.2 1B/3B`, `Gemma 2 9B -> 2B`, `DeepSeek`, or transferring abilities from fine-tuned and abliterated models into compact bases.
-- **Sparse Autoencoders (SAEs):** Can SAEs decompose the high-entropy polysemantic knots in layers 1-22 into monosemantic directions, unlocking clean trajectory transfer across all layers rather than only anchor blocks?
-- **Join the discussion:** Open a GitHub Issue to share your benchmark runs, report edge cases, or suggest alternative manifold alignment techniques.
+- **Reasoning Trajectory Transfer (DeepSeek-R1 & Qwen):**
+  - Transferring step-by-step reasoning dynamics from `DeepSeek-R1-Distill-Qwen-32B` or `14B` directly into compact `Qwen-7B` or `1.5B` models without running expensive reinforcement learning (RL) rollouts.
+- **Agentic & Code Generation Flow (Qwen-Coder):**
+  - Projecting trajectories from `Qwen2.5-Coder-32B` into `Qwen2.5-Coder-7B`, `3B`, or `1.5B` to verify whether AST-valid syntax and tool-calling invariants transfer to small models.
+- **Cross-Size Density Experiments (Gemma & Llama):**
+  - Compressing the heavy representation manifold of `Gemma-2-27B` into `Gemma-2-9B` or `2B`.
+  - Testing whether `Llama-3.3-70B` or `Llama-3.1-8B` flow vectors can be directly injected into edge-class `Llama-3.2-3B` and `1B` models.
+- **Abliteration & Alignment Transplants:**
+  - Injecting refusal-ablation direction vectors from uncensored or agentic fine-tunes (such as `Huihui-NeoHorse`, Hermes, or abliterated models) into restricted base models without retraining.
+- **Mechanistic Interpretability (SAEs & Polysemantic Knots):**
+  - Can Sparse Autoencoders (SAEs) decompose the high-entropy superposition knots in layers 1-22 into monosemantic directions, unlocking trajectory transfer across all layers rather than just 4 anchor blocks?
+
+### Open an Issue or Share Your Results
+If you run DynamicTune on any of these pairs, open a GitHub Issue with your `scan_24_layers_autogate.py` entropy table, NLL deltas, or generation logs. We are actively reviewing PRs and discussion threads.
 
 ---
 
