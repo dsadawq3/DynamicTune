@@ -261,22 +261,20 @@ python scripts/bench_llama_cpp_real.py
 
 ## Community, High-Priority Model Pairs, and Open Issues
 
-We invite community members, researchers, and tinkerers with 24GB+ GPUs (RTX 3090/4090, dual GPUs, or cloud instances) to run trajectory surgery on high-demand modern model pairs:
+We invite community members and researchers with modern 24GB-32GB+ GPUs (RTX 5090, RTX 4090, dual GPUs, or cloud nodes) to run trajectory surgery on frontier model pairs:
 
-- **Reasoning Trajectory Transfer (DeepSeek-R1 & Qwen):**
-  - Transferring step-by-step reasoning dynamics from `DeepSeek-R1-Distill-Qwen-32B` or `14B` directly into compact `Qwen-7B` or `1.5B` models without running expensive reinforcement learning (RL) rollouts.
-- **Agentic & Code Generation Flow (Qwen-Coder):**
-  - Projecting trajectories from `Qwen2.5-Coder-32B` into `Qwen2.5-Coder-7B`, `3B`, or `1.5B` to verify whether AST-valid syntax and tool-calling invariants transfer to small models.
-- **Cross-Size Density Experiments (Gemma & Llama):**
-  - Compressing the heavy representation manifold of `Gemma-2-27B` into `Gemma-2-9B` or `2B`.
-  - Testing whether `Llama-3.3-70B` or `Llama-3.1-8B` flow vectors can be directly injected into edge-class `Llama-3.2-3B` and `1B` models.
-- **Abliteration & Alignment Transplants:**
-  - Injecting refusal-ablation direction vectors from uncensored or agentic fine-tunes (such as `Huihui-NeoHorse`, Hermes, or abliterated models) into restricted base models without retraining.
-- **Mechanistic Interpretability (SAEs & Polysemantic Knots):**
-  - Can Sparse Autoencoders (SAEs) decompose the high-entropy superposition knots in layers 1-22 into monosemantic directions, unlocking trajectory transfer across all layers rather than just 4 anchor blocks?
+- **Next-Gen Qwen Reasoning & Flow Surgery:**
+  - Projecting trajectories from `Qwen/Qwen3.8-27B` (or `Qwen3.8-Flash-Next`) into `Qwen/Qwen3.5-9B`, `4B`, or `2B`.
+  - Testing transfer between Mixture-of-Experts and dense backbones (`Qwen3.6-35B-A3B` -> `Qwen3.5-4B`).
+- **Google Gemma-4 Cross-Scale Transfer:**
+  - Compressing the representation manifold of `google/gemma-4-31B` (or `gemma-4-26B-A4B`) into mobile-class edge models like `google/gemma-4-E4B` or `gemma-4-E2B`.
+- **Abliteration & Agentic Trait Transplants:**
+  - Transferring refusal-ablation and guardrail-relaxation vectors from uncensored agentic models (e.g. `Huihui-NeoHorse-1-4B-abliterated` or Hermes) into restricted compact base models without destructive retraining.
+- **Unknotting Superposition with Pre-Trained SAEs:**
+  - Can official sparse autoencoders like `Qwen/SAE-Res-Qwen3.5-27B-W80K-L0_100` and `Qwen/SAE-Res-Qwen3.5-9B-Base-W64K` isolate monosemantic feature directions in layers 1-22, allowing trajectory transport across all layers rather than just 4 anchor blocks?
 
 ### Open an Issue or Share Your Results
-If you run DynamicTune on any of these pairs, open a GitHub Issue with your `scan_24_layers_autogate.py` entropy table, NLL deltas, or generation logs. We are actively reviewing PRs and discussion threads.
+If you run DynamicTune on `Qwen3.8`, `Gemma-4`, or custom fine-tunes on an RTX 5090 or cloud cluster, open a GitHub Issue with your `scan_24_layers_autogate.py` entropy table, NLL logs, and GGUF outputs. We actively review PRs and discussion threads.
 
 ---
 
