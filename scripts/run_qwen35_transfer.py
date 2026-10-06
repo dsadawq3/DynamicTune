@@ -312,7 +312,59 @@ def evaluate_benchmark_suites(
     return results
 
 
+def extract_teacher_lm_head(teacher_path: str, teacher_instance: Any = None) -> np.ndarray:
+    """Extract teacher lm_head weight dynamically across any model scale without loading full model into RAM."""
+    if teacher_instance is not None and hasattr(teacher_instance, "lm_head"):
+        return teacher_instance.lm_head.weight.detach().to(torch.float32).cpu().numpy()
+
+    t_dir = Path(teacher_path)
+    # Check safetensors index file first (multi-shard model)
+    index_file = t_dir / "model.safetensors.index.json"
+    if index_file.exists():
+        try:
+            with open(index_file, "r", encoding="utf-8") as f:
+                weight_map = json.load(f).get("weight_map", {})
+            shard_name = (
+                weight_map.get("lm_head.weight")
+                or weight_map.get("model.language_model.embed_tokens.weight")
+                or weight_map.get("model.embed_tokens.weight")
+            )
+            if shard_name:
+                shard_path = t_dir / shard_name
+                if shard_path.exists():
+                    from safetensors.torch import load_file
+                    shard = load_file(str(shard_path), device="cpu")
+                    for candidate in ["lm_head.weight", "model.language_model.embed_tokens.weight", "model.embed_tokens.weight"]:
+                        if candidate in shard:
+                            w = shard[candidate].to(torch.float32).numpy()
+                            del shard
+                            return w
+        except Exception as e:
+            print(f"[extract_teacher_lm_head] Index lookup failed ({e}), checking shards directly...")
+
+    # Check individual safetensors files directly
+    for sf in t_dir.glob("*.safetensors"):
+        try:
+            from safetensors.torch import load_file
+            shard = load_file(str(sf), device="cpu")
+            for candidate in ["lm_head.weight", "model.language_model.embed_tokens.weight", "model.embed_tokens.weight"]:
+                if candidate in shard:
+                    w = shard[candidate].to(torch.float32).numpy()
+                    del shard
+                    return w
+        except Exception:
+            continue
+
+    # Fallback to HF loader with low_cpu_mem_usage
+    teacher_tmp = AutoModelForCausalLM.from_pretrained(teacher_path, dtype=torch.bfloat16, low_cpu_mem_usage=True)
+    w_head = teacher_tmp.lm_head.weight.detach().to(torch.float32).cpu().numpy()
+    del teacher_tmp
+    gc.collect()
+    return w_head
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description="DynamicTune: Emergent Flow Surgery for Transformer Models")
     default_student = "C:/models/Qwen3.5-0.8B-Base" if Path("C:/models/Qwen3.5-0.8B-Base").exists() else "Qwen/Qwen3.5-0.8B-Base"
     default_teacher = "C:/models/Qwen3.5-4B-Base" if Path("C:/models/Qwen3.5-4B-Base").exists() else "Qwen/Qwen3.5-4B-Base"
     parser.add_argument("--student-path", "--student-dir", dest="student_path", type=str, default=default_student, help="Path or Hugging Face ID of student model")
@@ -321,7 +373,8 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=4, help="Batch size for hidden state trace collection and evaluation")
     parser.add_argument("--gain", type=float, default=0.08, help="Transfer gain alpha")
     parser.add_argument("--n-charts", type=int, default=4, help="Number of manifold charts")
-    parser.add_argument("--max-blocks", type=int, default=6, help="Max blocks to transfer in pilot")
+    parser.add_argument("--target-layers", "--anchor-layers", dest="target_layers", type=str, default="auto", help="Layers to modify: 'auto' (depth anchors), 'all', or comma-separated indices (e.g. '0,7,15,23')")
+    parser.add_argument("--max-blocks", type=int, default=None, help="Legacy option: max consecutive blocks from layer 0")
     parser.add_argument("--use-memory-imprint", action="store_true", help="Use targeted rank-1 memory imprinting for MLP down_proj")
     parser.add_argument("--calibrate-head", action="store_true", help="Align vocabulary classification head with teacher")
     parser.add_argument("--head-gain", type=float, default=0.03, help="Vocabulary head alignment gain")
@@ -449,28 +502,20 @@ def main() -> None:
                 print(f"Projected teacher lm_head loaded from cache: shape {teacher_head_proj.shape}")
             else:
                 print("Extracting teacher lm_head directly from disk and projecting via final layer chart...")
-                t_final = np.concatenate([tr[32] for tr in teacher_traces], axis=0)  # (N, 2560)
-                s_final = np.concatenate([tr[24] for tr in student_traces], axis=0)  # (N, 1024)
+                t_final_key = len(teacher_traces[0]) - 1
+                s_final_key = len(student_traces[0]) - 1
+                t_final = np.concatenate([tr[t_final_key] for tr in teacher_traces], axis=0)
+                s_final = np.concatenate([tr[s_final_key] for tr in student_traces], axis=0)
                 u, _, vt = np.linalg.svd(t_final.T @ s_final, full_matrices=False)
-                p_final = u @ vt  # (2560, 1024)
-                shard_path = Path(args.teacher_path) / "model.safetensors-00001-of-00002.safetensors"
-                if shard_path.exists():
-                    from safetensors.torch import load_file
-                    shard = load_file(str(shard_path), device="cpu")
-                    w_t_head = shard["model.language_model.embed_tokens.weight"].to(torch.float32).numpy()
-                    del shard
-                else:
-                    teacher_tmp = AutoModelForCausalLM.from_pretrained(args.teacher_path, dtype=torch.float32, low_cpu_mem_usage=True)
-                    w_t_head = teacher_tmp.lm_head.weight.detach().to(torch.float32).cpu().numpy()
-                    del teacher_tmp
-                gc.collect()
+                p_final = u @ vt
+                w_t_head = extract_teacher_lm_head(args.teacher_path)
                 teacher_head_proj = (w_t_head @ p_final).astype(np.float32)
                 del w_t_head
                 gc.collect()
                 print(f"Projected teacher lm_head computed: shape {teacher_head_proj.shape}")
                 np.save(teacher_head_file, teacher_head_proj)
     else:
-        print("\n[Stage 5/6] Loading Teacher Model (4B) & Collecting Teacher Traces...")
+        print("\n[Stage 5/6] Loading Teacher Model & Collecting Teacher Traces...")
         t0 = time.time()
         if args.use_layer_streaming:
             print("Collecting teacher traces via PipelinedLayerStreamer (streaming into VRAM)...")
@@ -485,15 +530,18 @@ def main() -> None:
             )
             print(f"Teacher loaded in {time.time() - t0:.2f}s ({sum(p.numel() for p in teacher.parameters()):,} params)")
             teacher_traces = collect_hidden_states(teacher, tokenizer, train_prompts, device="cpu", batch_size=args.batch_size)
-        print(f"Teacher traces collected across {len(teacher_traces)} prompts (32 layers).")
+        n_t_layers = len(teacher_traces[0]) - 1
+        print(f"Teacher traces collected across {len(teacher_traces)} prompts ({n_t_layers} layers).")
 
         if args.calibrate_head:
             print("Extracting teacher lm_head and projecting via final layer chart...")
-            t_final = np.concatenate([tr[32] for tr in teacher_traces], axis=0)  # (N, 2560)
-            s_final = np.concatenate([tr[24] for tr in student_traces], axis=0)  # (N, 1024)
+            t_final_key = len(teacher_traces[0]) - 1
+            s_final_key = len(student_traces[0]) - 1
+            t_final = np.concatenate([tr[t_final_key] for tr in teacher_traces], axis=0)
+            s_final = np.concatenate([tr[s_final_key] for tr in student_traces], axis=0)
             u, _, vt = np.linalg.svd(t_final.T @ s_final, full_matrices=False)
-            p_final = u @ vt  # (2560, 1024)
-            w_t_head = teacher.lm_head.weight.detach().to(torch.float32).cpu().numpy()  # (V, 2560)
+            p_final = u @ vt
+            w_t_head = extract_teacher_lm_head(args.teacher_path, teacher_instance=teacher)
             teacher_head_proj = (w_t_head @ p_final).astype(np.float32)
             del w_t_head
             gc.collect()
@@ -515,14 +563,37 @@ def main() -> None:
     # 6. Non-Linear Multi-Chart Weight Surgery
     print("\n[Stage 6/6] Executing Non-Linear Multi-Chart Flow Surgery on Student...")
     n_student_layers = len(student.model.layers)
-    n_teacher_layers = 32
+    n_teacher_layers = len(teacher_traces[0]) - 1
 
     # Flatten token activations across prompts for atlas construction
     surgery_records: list[dict[str, Any]] = []
 
-    # Process selected student layers (up to max_blocks)
-    target_layers = list(range(min(args.max_blocks, n_student_layers)))
-    print(f"Targeting {len(target_layers)} layers: {target_layers}")
+    # Determine target layers dynamically
+    if args.max_blocks is not None:
+        target_layers = list(range(min(args.max_blocks, n_student_layers)))
+    elif args.target_layers.strip().lower() == "auto":
+        # Sparse depth anchor blocks: early representation, lower-mid, upper-mid, final layer
+        raw_anchors = [
+            0,
+            int(round((n_student_layers - 1) * 0.30)),
+            int(round((n_student_layers - 1) * 0.65)),
+            n_student_layers - 1,
+        ]
+        target_layers = sorted(list(set(raw_anchors)))
+    elif args.target_layers.strip().lower() == "all":
+        target_layers = list(range(n_student_layers))
+    else:
+        # Custom comma-separated indices, e.g. "0,7,15,23"
+        target_layers = [
+            int(idx.strip())
+            for idx in args.target_layers.split(",")
+            if idx.strip().isdigit() and 0 <= int(idx.strip()) < n_student_layers
+        ]
+        if not target_layers:
+            raise ValueError(f"No valid student layers found in --target-layers '{args.target_layers}' (model has {n_student_layers} layers).")
+
+    print(f"Student layers: {n_student_layers} | Teacher layers: {n_teacher_layers}")
+    print(f"Targeting {len(target_layers)} student anchor layers: {target_layers}")
 
     for s_idx in target_layers:
         t_idx = int(round(s_idx * (n_teacher_layers - 1) / max(1, n_student_layers - 1)))
@@ -530,9 +601,9 @@ def main() -> None:
 
         # Stack token states for student layer s_idx and teacher layer t_idx
         # State index in traces: 0 is embedding, s_idx+1 is layer output
-        s_in = np.concatenate([tr[s_idx] for tr in student_traces], axis=0)  # (N, 1024)
+        s_in = np.concatenate([tr[s_idx] for tr in student_traces], axis=0)
         s_out = np.concatenate([tr[s_idx + 1] for tr in student_traces], axis=0)
-        t_in = np.concatenate([tr[t_idx] for tr in teacher_traces], axis=0)  # (N, 2560)
+        t_in = np.concatenate([tr[t_idx] for tr in teacher_traces], axis=0)
         t_out = np.concatenate([tr[t_idx + 1] for tr in teacher_traces], axis=0)
 
         # Build Multi-Chart Atlas for input and output representations
@@ -545,7 +616,7 @@ def main() -> None:
 
         teacher_step = t_out_proj - t_in_proj
         student_step = s_out - s_in
-        flow_residual = teacher_step - student_step  # (N, 1024)
+        flow_residual = teacher_step - student_step
 
         # Spectral entropy of residual
         entropy = compute_subspace_entropy(flow_residual)
@@ -560,18 +631,18 @@ def main() -> None:
         # Compute updates for MLP using SwiGLU non-linear inversion
         mlp = layer_module.mlp
         with torch.no_grad():
-            w_gate = mlp.gate_proj.weight.detach().to(torch.float32).cpu().numpy()  # (3584, 1024)
-            w_up = mlp.up_proj.weight.detach().to(torch.float32).cpu().numpy()      # (3584, 1024)
-            w_down = mlp.down_proj.weight.detach().to(torch.float32).cpu().numpy()  # (1024, 3584)
+            w_gate = mlp.gate_proj.weight.detach().to(torch.float32).cpu().numpy()
+            w_up = mlp.up_proj.weight.detach().to(torch.float32).cpu().numpy()
+            w_down = mlp.down_proj.weight.detach().to(torch.float32).cpu().numpy()
 
             # Save backup of layer weights for rollback
             layer_backup = {k: v.clone() for k, v in layer_module.state_dict().items()}
 
             if knot:
-                print(f"  [Safety] Knot detected at Layer {s_idx} (entropy={entropy:.4f} > 0.88). SKIPPING MLP surgery to preserve memory.")
+                print(f"  [Safety] Knot detected at Layer {s_idx} (entropy={entropy:.4f} > {args.knot_threshold}). SKIPPING MLP surgery to preserve memory.")
                 # Apply gentle attention detour bypass only
                 bypass_proj = build_attention_detour_projector(
-                    [flow_residual], hidden_size=1024, eta=0.03
+                    [flow_residual], hidden_size=s_in.shape[-1], eta=0.03
                 )
                 if hasattr(layer_module, "linear_attn"):
                     out_p = layer_module.linear_attn.out_proj.weight
@@ -584,15 +655,15 @@ def main() -> None:
                 delta_down_norm = 0.0
             else:
                 # Compute student intermediate activations
-                u_gate = s_in @ w_gate.T  # (N, 3584)
-                v_up = s_in @ w_up.T      # (N, 3584)
-                act_swiglu = swish(u_gate) * v_up  # (N, 3584)
+                u_gate = s_in @ w_gate.T
+                v_up = s_in @ w_up.T
+                act_swiglu = swish(u_gate) * v_up
 
                 # Desired MLP output shift
-                mlp_target_shift = 0.5 * flow_residual  # (N, 1024)
+                mlp_target_shift = 0.5 * flow_residual
                 if args.depth_schedule != "none":
                     from faytuna_flow.transformer_core import gpt2_depth_gain_weight
-                    depth_mult = gpt2_depth_gain_weight(s_idx, 24, schedule=args.depth_schedule)
+                    depth_mult = gpt2_depth_gain_weight(s_idx, n_student_layers, schedule=args.depth_schedule)
                     alpha = float(args.gain) * depth_mult
                 else:
                     alpha = float(args.gain)

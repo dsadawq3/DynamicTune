@@ -167,8 +167,8 @@ def compute_semantic_null_space_projector(student_model: Any, top_k: int = 16) -
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Instruct-Native Flow Transfer Engine")
-    parser.add_argument("--student-path", type=str, default=r"C:\models\Qwen3.5-0.8B")
-    parser.add_argument("--teacher-path", type=str, default=r"C:\models\Qwen3.5-4B")
+    parser.add_argument("--student-path", "--student-dir", dest="student_path", type=str, default=r"C:\models\Qwen3.5-0.8B")
+    parser.add_argument("--teacher-path", "--teacher-dir", dest="teacher_path", type=str, default=r"C:\models\Qwen3.5-4B")
     parser.add_argument("--dataset-path", type=str, default="data/calibration_prompts_v2.json")
     parser.add_argument("--output-dir", type=str, default="runs/qwen35_instruct_native")
     parser.add_argument("--max-dialogs", type=int, default=12)
@@ -274,14 +274,17 @@ def main() -> None:
     print("\n[Stage 6/6] Executing Instruct-Native Closed-Form Weight Surgery...")
     
     # Procrustes Alignment between final layers on assistant tokens
-    t_final = np.concatenate([tr[32] for tr in t_traces], axis=0)  # (N_tokens, 2560)
-    s_final = np.concatenate([tr[24] for tr in s_traces], axis=0)  # (N_tokens, 1024)
+    t_final_key = len(t_traces[0]) - 1
+    s_final_key = len(s_traces[0]) - 1
+    t_final = np.concatenate([tr[t_final_key] for tr in t_traces], axis=0)
+    s_final = np.concatenate([tr[s_final_key] for tr in s_traces], axis=0)
     u, _, vt = np.linalg.svd(t_final.T @ s_final, full_matrices=False)
-    P_global = (u @ vt).astype(np.float32)  # (2560, 1024)
-    print(f"Global Procrustes Alignment: shape {P_global.shape}, orthogonal error: {np.linalg.norm(P_global.T @ P_global - np.eye(1024)):.2e}")
+    P_global = (u @ vt).astype(np.float32)
+    d_s = s_final.shape[-1]
+    print(f"Global Procrustes Alignment: shape {P_global.shape}, orthogonal error: {np.linalg.norm(P_global.T @ P_global - np.eye(d_s)):.2e}")
 
-    n_student_layers = 24
-    n_teacher_layers = 32
+    n_student_layers = len(student.model.layers)
+    n_teacher_layers = t_final_key
     surgery_records: list[dict[str, Any]] = []
 
     print("\nLayer-by-Layer Auto-Gate Scan on Assistant Tokens:")
