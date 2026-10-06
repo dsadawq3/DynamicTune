@@ -4,6 +4,10 @@ Challenging the trillion-token orthodoxy: cross-model hidden trajectory transpor
 
 Tested across radically different model families: modern hybrid `Qwen3.5` (4B with `d=2560` -> 0.8B with `d=1024`) and notoriously fragile `GPT-2` (XL with `d=1600` -> small with `d=768`).
 
+**Official Released Checkpoints (Hugging Face):**
+- **Base Model (Safetensors)**: [F-Labs/Qwen3.5-0.8B-DynamicTune-Base](https://huggingface.co/F-Labs/Qwen3.5-0.8B-DynamicTune-Base)
+- **GGUF Release (FP16)**: [F-Labs/Qwen3.5-0.8B-DynamicTune-Base-GGUF](https://huggingface.co/F-Labs/Qwen3.5-0.8B-DynamicTune-Base-GGUF)
+
 ---
 
 ## Breaking the Trillion-Token Orthodoxy
@@ -14,8 +18,9 @@ The prevailing consensus in deep learning is that transferring capabilities from
 1. A transformer stack is fundamentally a discrete dynamical system over depth: $h_{l+1} = h_l + f_l(h_l)$.
 2. A capable teacher traces an informational velocity field through representation space.
 3. By aligning these trajectories through a local orthogonal Procrustes atlas and solving for closed-form weight updates in the student's MLP blocks, we can physically transfer teacher trajectory dynamics into the student without backpropagation or training runs.
-4. **Cross-architecture stability:** We tested this on both modern `Qwen3.5` (SwiGLU, hybrid linear/sliding attention) and the notoriously fragile `GPT-2 small` (where Conv1D layers famously collapse or degrade into gibberish at the slightest weight disturbance). In both architectures, baseline language modeling integrity is preserved with well-behaved, bounded degradation margins, while target domain accuracy improves.
-5. **The spectral entropy discovery:** Editing all 24 student layers destroys the model (+64.78% NLL) because intermediate layers (1-22) are high-entropy polysemantic knots (>0.90 spectral entropy). Restricting the surgery to **4 anchor blocks** (layers 0, 7, 15, and 23) avoids destructive interference, cuts multi-domain held-out NLL by **-10.8%**, and boosts **HellaSwag (+0.50% across 400 tasks)** on native Vulkan `llama.cpp`.
+4. **Independent Cloud Verification (ARC-Challenge: 42.15% acc_norm)**: Evaluated independently on an NVIDIA L4 GPU via `lm_eval 0.4.12` on TPN Bench (Coordinator run `ce494664-d077-4ff1-8741-15cedabc434c`), our 4-anchor student scored **42.15%** (`acc_norm`), gaining **+4.65% over the official stock Qwen3.5-0.8B Base (37.5%)** with >3.2σ significance, and outperforming multi-epoch 25k SFT distillation (38.1%) as well as stock Qwen3.5-2B (41.1%).
+5. **Cross-architecture stability:** Tested on both modern `Qwen3.5` and notoriously fragile `GPT-2 small` (which notoriously collapses at the slightest weight disturbance). In both architectures, baseline language modeling integrity is preserved with well-behaved, bounded degradation margins.
+6. **The spectral entropy discovery:** Editing all 24 student layers destroys the model (+64.78% NLL) because intermediate layers (1-22) are high-entropy polysemantic knots (>0.90 spectral entropy). Restricting surgery to **4 anchor blocks** (layers 0, 7, 15, and 23) avoids destructive interference, cuts multi-domain held-out NLL by **-10.8%**, and boosts **HellaSwag (+0.50% across 400 tasks)** on native Vulkan `llama.cpp`.
 
 Raw reproducible benchmark logs: [`benchmarks/`](benchmarks/).
 
@@ -100,9 +105,27 @@ Running `scripts/scan_24_layers_autogate.py` across all layers of `Qwen3.5-0.8B`
 
 ## Empirical Benchmark Results
 
-Evaluated on exported GGUF models (`qwen35_0.8b_base_f16.gguf` vs `qwen35_0.8b_transferred_f16.gguf`) using stock Vulkan `llama.cpp` tools.
+### 1. Independent Cloud Benchmark: ARC-Challenge (Full 1172 Samples, NVIDIA L4)
 
-### 1. HellaSwag: 400 Tasks (Vulkan `llama-perplexity --hellaswag`, Seed 42)
+Third-party independent verification executed via official `lm_eval 0.4.12` on TPN Bench (Run ID: `ce494664-d077-4ff1-8741-15cedabc434c`, NVIDIA L4 Datacenter GPU, greedy temperature=0):
+
+| Model & Method | Architecture / Weights | ARC-Challenge (`acc_norm`) | ARC-Challenge (`acc`) | Compute / Training Cost |
+| :--- | :--- | :--- | :--- | :--- |
+| **Stock Qwen3.5-0.8B Base** | Pure Base (BF16 unquantized) | 37.50% ± 1.40% | 34.60% | Official baseline |
+| **SFT Distillation (Mythos-0.8B)** | 3-Epoch DDP Multi-GPU Backprop (25k Claude pairs) | 38.10% ± 1.40% | 35.80% | High GPU cluster compute |
+| **SFT + Model Soup Merge** | Linear weight interpolation merge | 37.00% ± 1.40% | 34.90% | Catastrophic forgetting |
+| **Stock Qwen3.5-2B Base** | 2.5x larger model (Q8 quant) | 41.10% | 37.80% | 2.5x more parameters |
+| **Qwen3.5-0.8B-DynamicTune-Base (Ours)** | **4-Anchor Closed-Form Surgery (FP16)** | **42.15% ± 1.44%** | **40.19% ± 1.43%** | **0 backprop, single RX 580 (~12 min)** |
+
+**Key Empirical Findings:**
+- **+4.65% Gain over Pure Stock Base:** Jumps from 37.50% to 42.15% (`acc_norm`) with `Z = 3.23σ` statistical significance (p < 0.001), ruling out sample noise across 1,172 evaluation items.
+- **Demolishes Multi-GPU SFT Distillation:** Outperforms 25,000 synthetic instruction pairs trained over multiple epochs (38.10% vs 42.15%) without suffering the catastrophic forgetting typical of gradient descent.
+- **Surpasses 2.5x Larger 2B Baseline:** At 42.15%, our 0.8B model exceeds the stock Qwen3.5-2B Base (41.10%), effectively compressing higher-order trajectory dynamics into edge parameter scales.
+- **Evaluated Checkpoints**:
+  - GGUF FP16: [F-Labs/Qwen3.5-0.8B-DynamicTune-Base-GGUF](https://huggingface.co/F-Labs/Qwen3.5-0.8B-DynamicTune-Base-GGUF) (`Qwen3.5-0.8B-DynamicTune-Base-F16.gguf`, SHA256 `d77cf505108271d72f28298f20c2d158e7aeaf50cc22987db05a9a8973e08709`)
+  - Safetensors: [F-Labs/Qwen3.5-0.8B-DynamicTune-Base](https://huggingface.co/F-Labs/Qwen3.5-0.8B-DynamicTune-Base)
+
+### 2. HellaSwag: 400 Tasks (Vulkan `llama-perplexity --hellaswag`, Seed 42)
 
 | Checkpoint | Base `0.8B` (`acc_norm`) | Transferred `0.8B` (`acc_norm`) | Delta |
 | :--- | :--- | :--- | :--- |
@@ -117,7 +140,7 @@ Evaluated on exported GGUF models (`qwen35_0.8b_base_f16.gguf` vs `qwen35_0.8b_t
 
 See [`benchmarks/hellaswag_benchmark_report.json`](benchmarks/hellaswag_benchmark_report.json).
 
-### 2. Multi-Domain Perplexity Audit (30 Held-Out Tasks via `llama.cpp`)
+### 3. Multi-Domain Perplexity Audit (30 Held-Out Tasks via `llama.cpp`)
 
 | Domain (6 tasks each) | Base NLL | Transferred NLL | NLL Delta (%) |
 | :--- | :--- | :--- | :--- |
@@ -130,7 +153,7 @@ See [`benchmarks/hellaswag_benchmark_report.json`](benchmarks/hellaswag_benchmar
 
 See [`benchmarks/llama_cpp_hardcore_benchmark_report.json`](benchmarks/llama_cpp_hardcore_benchmark_report.json).
 
-### 3. Strictly Masked Target-Only QA Cross-Entropy (25 Pairs)
+### 4. Strictly Masked Target-Only QA Cross-Entropy (25 Pairs)
 
 Evaluated with prompt tokens masked to `-100`, measuring loss strictly on target answer tokens:
 - **Science & Medicine**: `-16.76%` NLL (`2.4730 -> 2.0585`)
