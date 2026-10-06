@@ -313,9 +313,10 @@ def evaluate_benchmark_suites(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Qwen 3.5 Non-Linear Multi-Chart Flow Transfer")
-    parser.add_argument("--student-path", type=str, default=r"C:\models\Qwen3.5-0.8B-Base")
-    parser.add_argument("--teacher-path", type=str, default=r"C:\models\Qwen3.5-4B-Base")
+    default_student = "C:/models/Qwen3.5-0.8B-Base" if Path("C:/models/Qwen3.5-0.8B-Base").exists() else "Qwen/Qwen3.5-0.8B-Base"
+    default_teacher = "C:/models/Qwen3.5-4B-Base" if Path("C:/models/Qwen3.5-4B-Base").exists() else "Qwen/Qwen3.5-4B-Base"
+    parser.add_argument("--student-path", "--student-dir", dest="student_path", type=str, default=default_student, help="Path or Hugging Face ID of student model")
+    parser.add_argument("--teacher-path", "--teacher-dir", dest="teacher_path", type=str, default=default_teacher, help="Path or Hugging Face ID of teacher model")
     parser.add_argument("--device", type=str, default="cpu", choices=["cpu", "dml", "cuda", "auto"], help="Execution device for student model (cpu, dml, cuda, auto)")
     parser.add_argument("--batch-size", type=int, default=4, help="Batch size for hidden state trace collection and evaluation")
     parser.add_argument("--gain", type=float, default=0.08, help="Transfer gain alpha")
