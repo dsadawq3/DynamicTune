@@ -35,6 +35,7 @@ from faytuna_flow.manifold_charts import (
 )
 from faytuna_flow.nonlinear_transfer import (
     align_vocabulary_head,
+    bilinear_swiglu_manifold_solve,
     compute_2jet_curvature_metric,
     damped_tikhonov_pinv,
     invert_swiglu_activations,
@@ -390,9 +391,10 @@ def main() -> None:
     parser.add_argument("--num-calibration-prompts", type=int, default=32, help="Number of calibration prompts to draw from v2 generator (default: 32)")
     parser.add_argument("--depth-schedule", type=str, default="none", choices=["none", "flat", "sine", "boost_deep"], help="Modulate alpha gain across layer depth (none, sine, boost_deep)")
     parser.add_argument("--knot-threshold", type=float, default=0.985, help="Subspace spectral entropy threshold to classify as knot (default: 0.985)")
-    parser.add_argument("--experimental", action="store_true", help="Enable experimental high-precision mode (Gauss-Newton 2nd-order SwiGLU manifold inversion, dual Attention-MLP bipartite flow surgery, and backtracking gain line search)")
-    parser.add_argument("--experimental-attn-ratio", type=float, default=0.35, help="Ratio of flow residual routed to Attention output projection in experimental mode (default: 0.35)")
+    parser.add_argument("--experimental", action="store_true", help="Enable experimental high-precision mode (Riemannian alternating bilinear SwiGLU manifold co-optimization, Gauss-Newton 2nd-order inversion, and multi-prompt line search)")
+    parser.add_argument("--experimental-attn-ratio", type=float, default=0.0, help="Ratio of flow residual routed to Attention output projection in experimental mode (default: 0.0, pure MLP)")
     parser.add_argument("--experimental-gn-iters", type=int, default=5, help="Number of Gauss-Newton iterations for SwiGLU pre-activation inversion (default: 5)")
+    parser.add_argument("--experimental-cycles", type=int, default=3, help="Number of alternating Riemannian block-coordinate cycles for (W_down, W_gate, W_up) (default: 3)")
     args = parser.parse_args()
 
 
@@ -682,39 +684,42 @@ def main() -> None:
                     attn_param = layer_module.self_attn.o_proj.weight
 
                 if args.experimental:
-                    print(f"  [Experimental Mode] Bipartite Flow & Gauss-Newton 2-Jet Inversion active.")
+                    print(f"  [Experimental Mode] Riemannian Alternating Bilinear SwiGLU Manifold Solver active.")
                     gamma_attn = float(args.experimental_attn_ratio) if attn_param is not None else 0.0
                     f_attn = gamma_attn * flow_residual
                     f_mlp = (1.0 - gamma_attn) * flow_residual
 
-                    # 1. Attention flow surgery (output space rotation)
+                    # 1. Optional Attention flow surgery (output space rotation)
                     delta_w_attn = None
                     w_attn = None
                     if attn_param is not None and gamma_attn > 0:
                         w_attn = attn_param.detach().to(torch.float32).cpu().numpy()
-                        # Rotate output representation space in R^{d_model}: (d_model, d_model) @ (d_model, d_attn_inner)
-                        p_rot = (f_attn.T @ s_in) / (float(np.linalg.norm(s_in)**2) + 1e-4)  # (1024, 1024)
-                        delta_w_attn_raw = (p_rot @ w_attn).astype(np.float32)  # (1024, 2048)
+                        p_rot = (f_attn.T @ s_in) / (float(np.linalg.norm(s_in)**2) + 1e-4)
+                        delta_w_attn_raw = (p_rot @ w_attn).astype(np.float32)
                         delta_w_attn, scale_attn = spectral_directional_rescale(w_attn, delta_w_attn_raw, max_spectral_ratio=0.03)
 
-                    # 2. MLP surgery with Gauss-Newton 2nd-order inversion
-                    down_pinv = damped_tikhonov_pinv(w_down.T, ridge=1e-3, relative=True)
-                    delta_act = f_mlp @ down_pinv
-                    delta_u, delta_v = iterative_gauss_newton_swiglu_inversion(
-                        u_gate, v_up, delta_act,
-                        max_iter=int(args.experimental_gn_iters),
-                        second_order=True,
+                    # 2. Coupled Bilinear SwiGLU Manifold Surgery
+                    delta_w_down, delta_w_gate, delta_w_up, solver_stats = bilinear_swiglu_manifold_solve(
+                        s_in, w_gate, w_up, w_down, f_mlp,
+                        n_outer_cycles=int(args.experimental_cycles),
+                        gn_iters=int(args.experimental_gn_iters),
+                        energy_ratio=0.85,
+                        damping=1e-3,
+                        saliency_power=1.0,
+                        max_spectral_ratio=0.05,
                     )
-                    delta_w_gate = solve_adaptive_spectral_svd_deltas(s_in, delta_u, energy_ratio=0.85, max_rank=128).T
-                    delta_w_up = solve_adaptive_spectral_svd_deltas(s_in, delta_v, energy_ratio=0.85, max_rank=128).T
-                    delta_w_down = solve_adaptive_spectral_svd_deltas(act_swiglu, f_mlp, energy_ratio=0.85, max_rank=128).T
+                    print(f"    -> Bilinear solver: initial error {solver_stats['initial_error']:.3f} -> final {solver_stats['final_error']:.3f} (rel error {solver_stats['relative_error']:.4f})")
 
-                    delta_w_gate, scale_gate = spectral_directional_rescale(w_gate, delta_w_gate, max_spectral_ratio=0.05)
-                    delta_w_up, scale_up = spectral_directional_rescale(w_up, delta_w_up, max_spectral_ratio=0.05)
-                    delta_w_down, scale_down = spectral_directional_rescale(w_down, delta_w_down, max_spectral_ratio=0.05)
+                    if args.use_memory_imprint:
+                        delta_w_down = rank_one_memory_imprint(
+                            w_down, act_swiglu, f_mlp,
+                            top_k=8,
+                            max_relative_norm=0.03,
+                        )
+
                     delta_down_norm = float(np.linalg.norm(delta_w_down))
 
-                    # 3. Backtracking gain line-search: find optimal alpha in {1.0, 0.5, 0.25, 0.125} * alpha
+                    # 3. Backtracking gain line-search against full EVAL_PROMPTS
                     candidate_alphas = [alpha, alpha * 0.5, alpha * 0.25, alpha * 0.125]
                     best_alpha = None
                     best_nll = float("inf")
@@ -728,14 +733,14 @@ def main() -> None:
                             if attn_param is not None and delta_w_attn is not None and w_attn is not None:
                                 attn_param.copy_(torch.from_numpy(w_attn + cand_alpha * delta_w_attn).to(attn_param.dtype))
 
-                        cand_eval = evaluate_nll_and_ppl(student, tokenizer, EVAL_PROMPTS[:1], device=device_obj)
+                        cand_eval = evaluate_nll_and_ppl(student, tokenizer, EVAL_PROMPTS, device=device_obj)
                         if cand_eval["mean_nll"] < best_nll:
                             best_nll = cand_eval["mean_nll"]
                             best_alpha = cand_alpha
                             best_eval = cand_eval
 
-                    # Verify if best candidate improves or holds baseline
-                    if best_nll <= pre_eval["mean_nll"] * 1.01 and best_alpha is not None:
+                    current_holdout = surgery_records[-1].get("holdout_nll", pre_eval["mean_nll"]) if surgery_records else pre_eval["mean_nll"]
+                    if best_nll <= current_holdout * 1.005 and best_alpha is not None:
                         with torch.no_grad():
                             mlp.down_proj.weight.copy_(torch.from_numpy(w_down + best_alpha * delta_w_down).to(mlp.down_proj.weight.dtype))
                             mlp.gate_proj.weight.copy_(torch.from_numpy(w_gate + best_alpha * delta_w_gate).to(mlp.gate_proj.weight.dtype))
@@ -746,10 +751,10 @@ def main() -> None:
                         val_eval = best_eval
                         print(f"  [Accepted] Layer {s_idx} optimal gain alpha={best_alpha:.4f} | holdout NLL = {val_eval['mean_nll']:.4f}")
                     else:
-                        print(f"  [Rollback] Layer {s_idx} candidate gains degraded NLL (best {best_nll:.4f} vs base {pre_eval['mean_nll']:.4f}); rolling back.")
+                        print(f"  [Rollback] Layer {s_idx} candidate gains degraded NLL (best {best_nll:.4f} vs holdout {current_holdout:.4f}); rolling back.")
                         layer_module.load_state_dict(layer_backup)
                         accepted = False
-                        val_eval = best_eval if best_eval is not None else evaluate_nll_and_ppl(student, tokenizer, EVAL_PROMPTS[:1], device=device_obj)
+                        val_eval = best_eval if best_eval is not None else evaluate_nll_and_ppl(student, tokenizer, EVAL_PROMPTS, device=device_obj)
                 else:
                     # Non-linear pre-activation inversion for SwiGLU gates
                     down_pinv = damped_tikhonov_pinv(w_down.T, ridge=1e-3, relative=True)

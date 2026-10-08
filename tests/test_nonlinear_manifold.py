@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from faytuna_flow.nonlinear_transfer import (
+    bilinear_swiglu_manifold_solve,
     compute_2jet_curvature_metric,
     damped_tikhonov_pinv,
     gelu,
@@ -344,4 +345,35 @@ def test_spectral_directional_rescale_bounds():
     assert scale_small == 1.0
     np.testing.assert_allclose(scaled_dw_small, delta_w_small, rtol=1e-6, atol=1e-8)
     assert np.linalg.norm(scaled_dw_small, ord=2) <= target_sigma
+
+
+def test_bilinear_swiglu_manifold_solve_convergence():
+    """Verify Riemannian alternating block-coordinate descent solves coupled SwiGLU manifold."""
+    rng = np.random.RandomState(42)
+    n, d_in, d_inter = 48, 64, 128
+    x = rng.randn(n, d_in).astype(np.float32)
+    w_gate = (rng.randn(d_inter, d_in) / np.sqrt(d_in)).astype(np.float32)
+    w_up = (rng.randn(d_inter, d_in) / np.sqrt(d_in)).astype(np.float32)
+    w_down = (rng.randn(d_in, d_inter) / np.sqrt(d_inter)).astype(np.float32)
+
+    target_dy = (0.04 * rng.randn(n, d_in)).astype(np.float32)
+
+    dw_down, dw_gate, dw_up, stats = bilinear_swiglu_manifold_solve(
+        x, w_gate, w_up, w_down, target_dy,
+        n_outer_cycles=3,
+        gn_iters=4,
+        energy_ratio=0.85,
+        max_spectral_ratio=0.05,
+    )
+
+    assert dw_down.shape == w_down.shape
+    assert dw_gate.shape == w_gate.shape
+    assert dw_up.shape == w_up.shape
+    assert stats["relative_error"] < 0.85
+    assert len(stats["convergence_history"]) == 3
+    # Check spectral norm constraints
+    assert np.linalg.norm(dw_down, ord=2) <= 0.05 * np.linalg.norm(w_down, ord=2) + 1e-5
+    assert np.linalg.norm(dw_gate, ord=2) <= 0.05 * np.linalg.norm(w_gate, ord=2) + 1e-5
+    assert np.linalg.norm(dw_up, ord=2) <= 0.05 * np.linalg.norm(w_up, ord=2) + 1e-5
+
 

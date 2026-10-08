@@ -652,3 +652,132 @@ def align_vocabulary_head(
 
     scaled_delta = (gain * clamp) * delta_w
     return w_s + scaled_delta
+
+
+def bilinear_swiglu_manifold_solve(
+    x_tokens: np.ndarray,
+    w_gate: np.ndarray,
+    w_up: np.ndarray,
+    w_down: np.ndarray,
+    target_flow_shift: np.ndarray,
+    *,
+    n_outer_cycles: int = 3,
+    gn_iters: int = 5,
+    energy_ratio: float = 0.85,
+    max_rank: int = 128,
+    damping: float = 1e-3,
+    saliency_power: float = 1.0,
+    max_spectral_ratio: float = 0.05,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict[str, Any]]:
+    """Riemannian alternating block-coordinate descent for coupled SwiGLU weight manifold surgery.
+
+    Co-optimizes down_proj, gate_proj, and up_proj simultaneously to eliminate bilinear cross-term
+    interference (Delta W_down @ Delta Z), weighting token inner products by Fisher/energy saliency.
+
+    Args:
+        x_tokens: (N, d_in) student representation states entering the MLP.
+        w_gate: (d_inter, d_in) baseline gate projection weights.
+        w_up: (d_inter, d_in) baseline up projection weights.
+        w_down: (d_in, d_inter) baseline down projection weights.
+        target_flow_shift: (N, d_in) target output displacement vector Delta Y.
+        n_outer_cycles: number of alternating block-coordinate iterations.
+        gn_iters: Gauss-Newton 2-jet inversion iterations per cycle.
+        energy_ratio: spectral variance coverage target for SVD solver.
+        max_rank: maximum rank cutoff for low-rank updates.
+        damping: Levenberg-Marquardt damping coefficient.
+        saliency_power: exponent for token-level residual energy weighting.
+        max_spectral_ratio: spectral trust-region radius relative to baseline operator.
+
+    Returns:
+        (delta_w_down, delta_w_gate, delta_w_up, stats): coupled updates and convergence telemetry.
+    """
+    x = finite_array(x_tokens, ndim=2, name="x_tokens")
+    wg = finite_array(w_gate, ndim=2, name="w_gate")
+    wu = finite_array(w_up, ndim=2, name="w_up")
+    wd = finite_array(w_down, ndim=2, name="w_down")
+    target_dy = finite_array(target_flow_shift, ndim=2, name="target_flow_shift")
+
+    # Baseline forward representations
+    u0 = x @ wg.T
+    v0 = x @ wu.T
+    z0 = swish(u0) * v0
+    y0 = z0 @ wd.T
+
+    # Token saliency weighting based on residual energy
+    saliency = np.linalg.norm(target_dy, axis=1)
+    mean_sal = float(np.mean(saliency)) + 1e-6
+    weights = np.clip((saliency / mean_sal) ** saliency_power, 0.2, 3.0)
+    w_sqrt = np.sqrt(weights)[:, None]
+    x_weighted = x * w_sqrt
+
+    # Initialization
+    dw_down = np.zeros_like(wd)
+    dw_gate = np.zeros_like(wg)
+    dw_up = np.zeros_like(wu)
+
+    err_initial = float(np.linalg.norm(target_dy))
+    convergence_history: list[float] = []
+
+    for cycle in range(n_outer_cycles):
+        # 1. Compute required latent shift Delta Z given current down projection
+        curr_w_down = wd + dw_down
+        curr_pinv = damped_tikhonov_pinv(curr_w_down.T, ridge=damping, relative=True)
+        residual_for_latent = target_dy - (z0 @ dw_down.T)
+        target_dz = residual_for_latent @ curr_pinv
+
+        # 2. Gauss-Newton 2-jet inversion for gate and up pre-activations
+        du_cycle, dv_cycle = iterative_gauss_newton_swiglu_inversion(
+            u0, v0, target_dz,
+            max_iter=gn_iters,
+            damping=damping,
+            second_order=True,
+        )
+
+        # 3. Solve SVD updates for gate and up on saliency-weighted tokens
+        dw_g_cand = solve_adaptive_spectral_svd_deltas(
+            x_weighted, du_cycle * w_sqrt,
+            energy_ratio=energy_ratio,
+            max_rank=max_rank,
+        ).T
+        dw_u_cand = solve_adaptive_spectral_svd_deltas(
+            x_weighted, dv_cycle * w_sqrt,
+            energy_ratio=energy_ratio,
+            max_rank=max_rank,
+        ).T
+
+        dw_gate, _ = spectral_directional_rescale(wg, dw_g_cand, max_spectral_ratio=max_spectral_ratio)
+        dw_up, _ = spectral_directional_rescale(wu, dw_u_cand, max_spectral_ratio=max_spectral_ratio)
+
+        # 4. Exact forward non-linear synthesis
+        z_synth = swish(x @ (wg + dw_gate).T) * (x @ (wu + dw_up).T)
+        dz_actual = z_synth - z0
+
+        # 5. Compensated down-projection solve
+        r_down = target_dy - (dz_actual @ wd.T)
+        z_synth_w = z_synth * w_sqrt
+        dw_d_cand = solve_adaptive_spectral_svd_deltas(
+            z_synth_w, r_down * w_sqrt,
+            energy_ratio=energy_ratio,
+            max_rank=max_rank,
+        ).T
+        dw_down, _ = spectral_directional_rescale(wd, dw_d_cand, max_spectral_ratio=max_spectral_ratio)
+
+        # Telemetry
+        y_curr = z_synth @ (wd + dw_down).T
+        err_curr = float(np.linalg.norm((y_curr - y0) - target_dy))
+        convergence_history.append(err_curr)
+
+    y_final = (swish(x @ (wg + dw_gate).T) * (x @ (wu + dw_up).T)) @ (wd + dw_down).T
+    err_final = float(np.linalg.norm((y_final - y0) - target_dy))
+    rel_error = err_final / max(err_initial, 1e-6)
+
+    stats = {
+        "initial_error": err_initial,
+        "final_error": err_final,
+        "relative_error": rel_error,
+        "convergence_history": convergence_history,
+        "cycles": n_outer_cycles,
+    }
+
+    return dw_down, dw_gate, dw_up, stats
+
