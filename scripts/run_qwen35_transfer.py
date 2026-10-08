@@ -711,11 +711,14 @@ def main() -> None:
                     print(f"    -> Bilinear solver: initial error {solver_stats['initial_error']:.3f} -> final {solver_stats['final_error']:.3f} (rel error {solver_stats['relative_error']:.4f})")
 
                     if args.use_memory_imprint:
-                        delta_w_down = rank_one_memory_imprint(
+                        new_down = rank_one_memory_imprint(
                             w_down, act_swiglu, f_mlp,
-                            top_k=8,
+                            ridge=1e-3,
+                            gain=1.0,
                             max_relative_norm=0.03,
                         )
+                        delta_w_down = delta_w_down + (new_down - w_down)
+                        delta_w_down, _ = spectral_directional_rescale(w_down, delta_w_down, max_spectral_ratio=0.05)
 
                     delta_down_norm = float(np.linalg.norm(delta_w_down))
 
