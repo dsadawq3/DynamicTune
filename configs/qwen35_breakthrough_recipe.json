@@ -1,0 +1,73 @@
+{
+  "name": "qwen35_breakthrough_4block_anchor_recipe",
+  "version": "1.0.0",
+  "date_created": "2026-09-18T17:53:00+03:00",
+  "description": "Exact reproduction recipe for the Qwen 3.5 4B -> 0.8B Breakthrough Model (runs/qwen35_breakthrough_upgraded). This configuration achieved -10.8% average NLL reduction across 30 tasks on Vulkan llama.cpp (-23.8% in Biomedicine, -14.6% in Mathematics, -7.6% in Python Algorithms) and +0.50% normalized accuracy on 400 HellaSwag tasks.",
+  "command": {
+    "script": "scripts/run_qwen35_transfer.py",
+    "arguments": [
+      "--student-path", "Qwen/Qwen3.5-0.8B-Base",
+      "--teacher-path", "Qwen/Qwen3.5-4B-Base",
+      "--device", "dml",
+      "--use-layer-streaming",
+      "--prompt-source", "default",
+      "--use-memory-imprint",
+      "--calibrate-head",
+      "--head-gain", "0.03",
+      "--distill-steps", "5",
+      "--max-blocks", "4",
+      "--output-dir", "runs/qwen35_breakthrough_upgraded",
+      "--save-model"
+    ]
+  },
+  "parameters": {
+    "student_architecture": "Qwen3.5-0.8B-Base (752M params, d=1024, 24 layers: 18 Gated DeltaNet + 6 Attention)",
+    "teacher_architecture": "Qwen3.5-4B-Base (4.2B params, d=2560, 32 layers: 24 Gated DeltaNet + 8 Attention)",
+    "max_blocks": 4,
+    "anchor_layers": [0, 1, 2, 3],
+    "teacher_layer_mapping": {
+      "0": 0,
+      "1": 1,
+      "2": 3,
+      "3": 4
+    },
+    "untouched_stabilizer_layers": [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+    "prompt_source": "default",
+    "calibration_prompt_count": 8,
+    "memory_imprint": {
+      "enabled": true,
+      "algorithm": "Rank-One MEMIT / ROME",
+      "target_projection": "down_proj",
+      "ridge": 0.001,
+      "max_relative_norm": 0.03
+    },
+    "vocabulary_head_calibration": {
+      "enabled": true,
+      "method": "Orthogonal Procrustes Projection (248320 x 2560 -> 248320 x 1024)",
+      "head_gain": 0.03,
+      "max_relative_norm": 0.02
+    },
+    "micro_distillation": {
+      "enabled": true,
+      "steps": 5,
+      "objective": "Joint Latent Flow Matching (L_flow) + Task Cross-Entropy (L_ce)",
+      "frozen_layers": "All non-anchor layers frozen"
+    },
+    "mathematical_solver": {
+      "inversion": "damped_tikhonov_pinv (ridge=1e-3, relative=True)",
+      "spectral_svd": "solve_adaptive_spectral_svd_deltas (energy_ratio=0.85, max_rank=128)",
+      "spectral_rescaling": "spectral_directional_rescale (max_spectral_ratio=0.05)"
+    },
+    "streaming": {
+      "enabled": true,
+      "pattern": "Layer-Outer Single-Layer VRAM Streaming",
+      "peak_vram_mb": 250
+    }
+  },
+  "benchmark_verification": {
+    "llama_cpp_30_tasks": "benchmarks/llama_cpp_hardcore_benchmark_report.json",
+    "hellaswag_400_tasks": "benchmarks/hellaswag_benchmark_report.json",
+    "strict_qa_25_tasks": "runs/qwen35_breakthrough_upgraded/strict_qa_report.json",
+    "transfer_report": "runs/qwen35_breakthrough_upgraded/qwen35_transfer_report.json"
+  }
+}
