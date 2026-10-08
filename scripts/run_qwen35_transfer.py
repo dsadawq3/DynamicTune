@@ -38,6 +38,7 @@ from faytuna_flow.nonlinear_transfer import (
     compute_2jet_curvature_metric,
     damped_tikhonov_pinv,
     invert_swiglu_activations,
+    iterative_gauss_newton_swiglu_inversion,
     rank_one_memory_imprint,
     solve_adaptive_spectral_svd_deltas,
     solve_truncated_svd_deltas,
@@ -389,6 +390,9 @@ def main() -> None:
     parser.add_argument("--num-calibration-prompts", type=int, default=32, help="Number of calibration prompts to draw from v2 generator (default: 32)")
     parser.add_argument("--depth-schedule", type=str, default="none", choices=["none", "flat", "sine", "boost_deep"], help="Modulate alpha gain across layer depth (none, sine, boost_deep)")
     parser.add_argument("--knot-threshold", type=float, default=0.985, help="Subspace spectral entropy threshold to classify as knot (default: 0.985)")
+    parser.add_argument("--experimental", action="store_true", help="Enable experimental high-precision mode (Gauss-Newton 2nd-order SwiGLU manifold inversion, dual Attention-MLP bipartite flow surgery, and backtracking gain line search)")
+    parser.add_argument("--experimental-attn-ratio", type=float, default=0.35, help="Ratio of flow residual routed to Attention output projection in experimental mode (default: 0.35)")
+    parser.add_argument("--experimental-gn-iters", type=int, default=5, help="Number of Gauss-Newton iterations for SwiGLU pre-activation inversion (default: 5)")
     args = parser.parse_args()
 
 
@@ -670,56 +674,130 @@ def main() -> None:
                 else:
                     alpha = float(args.gain)
 
+                # Identify attention output projection
+                attn_param = None
+                if hasattr(layer_module, "linear_attn"):
+                    attn_param = layer_module.linear_attn.out_proj.weight
+                elif hasattr(layer_module, "self_attn"):
+                    attn_param = layer_module.self_attn.o_proj.weight
 
-                # Non-linear pre-activation inversion for SwiGLU gates
-                down_pinv = damped_tikhonov_pinv(w_down.T, ridge=1e-3, relative=True)
-                delta_act = mlp_target_shift @ down_pinv  # (N, 3584)
+                if args.experimental:
+                    print(f"  [Experimental Mode] Bipartite Flow & Gauss-Newton 2-Jet Inversion active.")
+                    gamma_attn = float(args.experimental_attn_ratio) if attn_param is not None else 0.0
+                    f_attn = gamma_attn * flow_residual
+                    f_mlp = (1.0 - gamma_attn) * flow_residual
 
-                delta_u, delta_v = invert_swiglu_activations(u_gate, v_up, delta_act, epsilon=1e-4)
-                delta_w_gate = solve_adaptive_spectral_svd_deltas(s_in, delta_u, energy_ratio=0.85, max_rank=128).T
-                delta_w_up = solve_adaptive_spectral_svd_deltas(s_in, delta_v, energy_ratio=0.85, max_rank=128).T
+                    # 1. Attention flow surgery
+                    delta_w_attn = None
+                    w_attn = None
+                    if attn_param is not None and gamma_attn > 0:
+                        w_attn = attn_param.detach().to(torch.float32).cpu().numpy()
+                        delta_w_attn_raw = solve_adaptive_spectral_svd_deltas(s_in, f_attn, energy_ratio=0.85, max_rank=128).T
+                        delta_w_attn, scale_attn = spectral_directional_rescale(w_attn, delta_w_attn_raw, max_spectral_ratio=0.03)
 
-                delta_w_gate, scale_gate = spectral_directional_rescale(w_gate, delta_w_gate, max_spectral_ratio=0.05)
-                delta_w_up, scale_up = spectral_directional_rescale(w_up, delta_w_up, max_spectral_ratio=0.05)
-
-                if args.use_memory_imprint:
-                    new_down = rank_one_memory_imprint(
-                        w_down,
-                        act_swiglu,
-                        mlp_target_shift,
-                        ridge=1e-3,
-                        gain=alpha,
-                        max_relative_norm=0.03,
+                    # 2. MLP surgery with Gauss-Newton 2nd-order inversion
+                    down_pinv = damped_tikhonov_pinv(w_down.T, ridge=1e-3, relative=True)
+                    delta_act = f_mlp @ down_pinv
+                    delta_u, delta_v = iterative_gauss_newton_swiglu_inversion(
+                        u_gate, v_up, delta_act,
+                        max_iter=int(args.experimental_gn_iters),
+                        second_order=True,
                     )
-                    delta_down_norm = float(np.linalg.norm(new_down - w_down))
-                    scale_down = 1.0
+                    delta_w_gate = solve_adaptive_spectral_svd_deltas(s_in, delta_u, energy_ratio=0.85, max_rank=128).T
+                    delta_w_up = solve_adaptive_spectral_svd_deltas(s_in, delta_v, energy_ratio=0.85, max_rank=128).T
+                    delta_w_down = solve_adaptive_spectral_svd_deltas(act_swiglu, f_mlp, energy_ratio=0.85, max_rank=128).T
+
+                    delta_w_gate, scale_gate = spectral_directional_rescale(w_gate, delta_w_gate, max_spectral_ratio=0.05)
+                    delta_w_up, scale_up = spectral_directional_rescale(w_up, delta_w_up, max_spectral_ratio=0.05)
+                    delta_w_down, scale_down = spectral_directional_rescale(w_down, delta_w_down, max_spectral_ratio=0.05)
+                    delta_down_norm = float(np.linalg.norm(delta_w_down))
+
+                    # 3. Backtracking gain line-search: find optimal alpha in {1.0, 0.5, 0.25, 0.125} * alpha
+                    candidate_alphas = [alpha, alpha * 0.5, alpha * 0.25, alpha * 0.125]
+                    best_alpha = None
+                    best_nll = float("inf")
+                    best_eval = None
+
+                    for cand_alpha in candidate_alphas:
+                        with torch.no_grad():
+                            mlp.down_proj.weight.copy_(torch.from_numpy(w_down + cand_alpha * delta_w_down).to(mlp.down_proj.weight.dtype))
+                            mlp.gate_proj.weight.copy_(torch.from_numpy(w_gate + cand_alpha * delta_w_gate).to(mlp.gate_proj.weight.dtype))
+                            mlp.up_proj.weight.copy_(torch.from_numpy(w_up + cand_alpha * delta_w_up).to(mlp.up_proj.weight.dtype))
+                            if attn_param is not None and delta_w_attn is not None and w_attn is not None:
+                                attn_param.copy_(torch.from_numpy(w_attn + cand_alpha * delta_w_attn).to(attn_param.dtype))
+
+                        cand_eval = evaluate_nll_and_ppl(student, tokenizer, EVAL_PROMPTS[:1], device=device_obj)
+                        if cand_eval["mean_nll"] < best_nll:
+                            best_nll = cand_eval["mean_nll"]
+                            best_alpha = cand_alpha
+                            best_eval = cand_eval
+
+                    # Verify if best candidate improves or holds baseline
+                    if best_nll <= pre_eval["mean_nll"] * 1.01 and best_alpha is not None:
+                        with torch.no_grad():
+                            mlp.down_proj.weight.copy_(torch.from_numpy(w_down + best_alpha * delta_w_down).to(mlp.down_proj.weight.dtype))
+                            mlp.gate_proj.weight.copy_(torch.from_numpy(w_gate + best_alpha * delta_w_gate).to(mlp.gate_proj.weight.dtype))
+                            mlp.up_proj.weight.copy_(torch.from_numpy(w_up + best_alpha * delta_w_up).to(mlp.up_proj.weight.dtype))
+                            if attn_param is not None and delta_w_attn is not None and w_attn is not None:
+                                attn_param.copy_(torch.from_numpy(w_attn + best_alpha * delta_w_attn).to(attn_param.dtype))
+                        accepted = True
+                        val_eval = best_eval
+                        print(f"  [Accepted] Layer {s_idx} optimal gain alpha={best_alpha:.4f} | holdout NLL = {val_eval['mean_nll']:.4f}")
+                    else:
+                        print(f"  [Rollback] Layer {s_idx} candidate gains degraded NLL (best {best_nll:.4f} vs base {pre_eval['mean_nll']:.4f}); rolling back.")
+                        layer_module.load_state_dict(layer_backup)
+                        accepted = False
+                        val_eval = best_eval if best_eval is not None else evaluate_nll_and_ppl(student, tokenizer, EVAL_PROMPTS[:1], device=device_obj)
                 else:
-                    # 1. Update down_proj via Adaptive Spectral SVD
-                    delta_w_down = solve_adaptive_spectral_svd_deltas(act_swiglu, mlp_target_shift, energy_ratio=0.85, max_rank=128)
-                    delta_w_down_t = delta_w_down.T  # (1024, 3584)
-                    delta_w_down_t, scale_down = spectral_directional_rescale(w_down, delta_w_down_t, max_spectral_ratio=0.05)
-                    delta_down_norm = float(np.linalg.norm(delta_w_down_t))
-                    new_down = w_down + alpha * delta_w_down_t
+                    # Non-linear pre-activation inversion for SwiGLU gates
+                    down_pinv = damped_tikhonov_pinv(w_down.T, ridge=1e-3, relative=True)
+                    delta_act = mlp_target_shift @ down_pinv  # (N, 3584)
 
-                new_gate = w_gate + alpha * delta_w_gate
-                new_up = w_up + alpha * delta_w_up
+                    delta_u, delta_v = invert_swiglu_activations(u_gate, v_up, delta_act, epsilon=1e-4)
+                    delta_w_gate = solve_adaptive_spectral_svd_deltas(s_in, delta_u, energy_ratio=0.85, max_rank=128).T
+                    delta_w_up = solve_adaptive_spectral_svd_deltas(s_in, delta_v, energy_ratio=0.85, max_rank=128).T
 
-                # Commit to PyTorch module in its native dtype
-                mlp.down_proj.weight.copy_(torch.from_numpy(new_down).to(mlp.down_proj.weight.dtype))
-                mlp.gate_proj.weight.copy_(torch.from_numpy(new_gate).to(mlp.gate_proj.weight.dtype))
-                mlp.up_proj.weight.copy_(torch.from_numpy(new_up).to(mlp.up_proj.weight.dtype))
+                    delta_w_gate, scale_gate = spectral_directional_rescale(w_gate, delta_w_gate, max_spectral_ratio=0.05)
+                    delta_w_up, scale_up = spectral_directional_rescale(w_up, delta_w_up, max_spectral_ratio=0.05)
 
-                print(f"  -> Applied non-linear updates (scale_down={scale_down:.4f}, scale_gate={scale_gate:.4f})")
+                    if args.use_memory_imprint:
+                        new_down = rank_one_memory_imprint(
+                            w_down,
+                            act_swiglu,
+                            mlp_target_shift,
+                            ridge=1e-3,
+                            gain=alpha,
+                            max_relative_norm=0.03,
+                        )
+                        delta_down_norm = float(np.linalg.norm(new_down - w_down))
+                        scale_down = 1.0
+                    else:
+                        # 1. Update down_proj via Adaptive Spectral SVD
+                        delta_w_down = solve_adaptive_spectral_svd_deltas(act_swiglu, mlp_target_shift, energy_ratio=0.85, max_rank=128)
+                        delta_w_down_t = delta_w_down.T  # (1024, 3584)
+                        delta_w_down_t, scale_down = spectral_directional_rescale(w_down, delta_w_down_t, max_spectral_ratio=0.05)
+                        delta_down_norm = float(np.linalg.norm(delta_w_down_t))
+                        new_down = w_down + alpha * delta_w_down_t
 
-            # Quick validation check on holdout prompt
-            val_eval = evaluate_nll_and_ppl(student, tokenizer, EVAL_PROMPTS[:1], device=device_obj)
-            if val_eval["mean_nll"] > pre_eval["mean_nll"] * 1.02:
-                print(f"  [Rollback] Layer {s_idx} degraded holdout NLL ({val_eval['mean_nll']:.4f} vs base {pre_eval['mean_nll']:.4f}); rolling back.")
-                layer_module.load_state_dict(layer_backup)
-                accepted = False
-            else:
-                print(f"  [Accepted] Layer {s_idx} holdout NLL = {val_eval['mean_nll']:.4f}")
-                accepted = True
+                    new_gate = w_gate + alpha * delta_w_gate
+                    new_up = w_up + alpha * delta_w_up
+
+                    # Commit to PyTorch module in its native dtype
+                    mlp.down_proj.weight.copy_(torch.from_numpy(new_down).to(mlp.down_proj.weight.dtype))
+                    mlp.gate_proj.weight.copy_(torch.from_numpy(new_gate).to(mlp.gate_proj.weight.dtype))
+                    mlp.up_proj.weight.copy_(torch.from_numpy(new_up).to(mlp.up_proj.weight.dtype))
+
+                    print(f"  -> Applied non-linear updates (scale_down={scale_down:.4f}, scale_gate={scale_gate:.4f})")
+
+                    # Quick validation check on holdout prompt
+                    val_eval = evaluate_nll_and_ppl(student, tokenizer, EVAL_PROMPTS[:1], device=device_obj)
+                    if val_eval["mean_nll"] > pre_eval["mean_nll"] * 1.02:
+                        print(f"  [Rollback] Layer {s_idx} degraded holdout NLL ({val_eval['mean_nll']:.4f} vs base {pre_eval['mean_nll']:.4f}); rolling back.")
+                        layer_module.load_state_dict(layer_backup)
+                        accepted = False
+                    else:
+                        print(f"  [Accepted] Layer {s_idx} holdout NLL = {val_eval['mean_nll']:.4f}")
+                        accepted = True
 
             sys.stdout.flush()
 

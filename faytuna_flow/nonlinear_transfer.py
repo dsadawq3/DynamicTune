@@ -73,6 +73,13 @@ def swish_prime(u: np.ndarray) -> np.ndarray:
     return sig * (1.0 + arr * (1.0 - sig))
 
 
+def swish_second_derivative(u: np.ndarray) -> np.ndarray:
+    """Analytical second derivative of Swish: sigmoid(u) * (1 - sigmoid(u)) * (2 + u * (1 - 2 * sigmoid(u)))."""
+    arr = np.asarray(u, dtype=np.float64)
+    sig = sigmoid(arr)
+    return sig * (1.0 - sig) * (2.0 + arr * (1.0 - 2.0 * sig))
+
+
 def invert_gelu_preactivation(
     z_student: np.ndarray,
     delta_post_activation: np.ndarray,
@@ -169,6 +176,87 @@ def invert_swiglu_activations(
 
         delta_u = delta_u - step_factor * cur_j_u
         delta_v = delta_v - step_factor * cur_j_v
+
+        if max_delta > 0:
+            delta_u = np.clip(delta_u, -max_delta, max_delta)
+            delta_v = np.clip(delta_v, -max_delta, max_delta)
+
+    return delta_u, delta_v
+
+
+def iterative_gauss_newton_swiglu_inversion(
+    u_gate: np.ndarray,
+    v_up: np.ndarray,
+    delta_act: np.ndarray,
+    *,
+    max_iter: int = 5,
+    damping: float = 1e-3,
+    second_order: bool = True,
+    epsilon: float = 1e-4,
+    max_delta: float = 5.0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Iterative Gauss-Newton non-linear SwiGLU manifold inversion with 2-jet curvature correction.
+
+    Solves for (Delta_u, Delta_v) such that:
+        swish(u + Delta_u) * (v + Delta_v) - swish(u) * v approx delta_act
+    using damped Levenberg-Marquardt / Gauss-Newton iterations.
+
+    Args:
+        u_gate: (N, d) baseline gate pre-activations.
+        v_up: (N, d) baseline up pre-activations.
+        delta_act: (N, d) desired target shift in post-activation space.
+        max_iter: maximum Gauss-Newton refinement steps.
+        damping: Levenberg-Marquardt regularization coefficient lambda.
+        second_order: whether to apply second-order Hessian curvature adjustment.
+        epsilon: numerical floor.
+        max_delta: maximum absolute clip for perturbations.
+
+    Returns:
+        (delta_u, delta_v): (N, d) coupled pre-activation shifts.
+    """
+    u = finite_array(u_gate, ndim=2, name="u_gate")
+    v = finite_array(v_up, ndim=2, name="v_up")
+    da = finite_array(delta_act, ndim=2, name="delta_act")
+
+    if u.shape != v.shape or u.shape != da.shape:
+        raise ValueError(f"shape mismatch: u {u.shape}, v {v.shape}, delta_act {da.shape}")
+
+    # Initial first-order pseudoinverse step
+    j_u = swish_prime(u) * v
+    j_v = swish(u)
+    denom = j_u ** 2 + j_v ** 2 + damping
+    delta_u = (da / denom) * j_u
+    delta_v = (da / denom) * j_v
+
+    if max_delta > 0:
+        delta_u = np.clip(delta_u, -max_delta, max_delta)
+        delta_v = np.clip(delta_v, -max_delta, max_delta)
+
+    base_act = swish(u) * v
+
+    # Iterative Gauss-Newton refinement
+    for it in range(max_iter):
+        cur_u = u + delta_u
+        cur_v = v + delta_v
+        pred_act = swish(cur_u) * cur_v
+        residual = (pred_act - base_act) - da
+
+        cur_j_u = swish_prime(cur_u) * cur_v
+        cur_j_v = swish(cur_u)
+
+        if second_order:
+            # 2-jet curvature correction: account for Hessian term 0.5 * (u_curv * du^2 + 2 * j_uv * du * dv)
+            u_sec = swish_second_derivative(cur_u) * cur_v
+            j_uv = swish_prime(cur_u)
+            curv_term = 0.5 * (u_sec * (delta_u ** 2) + 2.0 * j_uv * delta_u * delta_v)
+            residual = residual + 0.5 * curv_term
+
+        cur_denom = cur_j_u ** 2 + cur_j_v ** 2 + damping * (1.0 + 0.1 * it)
+        step_u = (residual / cur_denom) * cur_j_u
+        step_v = (residual / cur_denom) * cur_j_v
+
+        delta_u = delta_u - step_u
+        delta_v = delta_v - step_v
 
         if max_delta > 0:
             delta_u = np.clip(delta_u, -max_delta, max_delta)

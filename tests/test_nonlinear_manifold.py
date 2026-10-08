@@ -12,11 +12,13 @@ from faytuna_flow.nonlinear_transfer import (
     gelu_prime,
     invert_gelu_preactivation,
     invert_swiglu_activations,
+    iterative_gauss_newton_swiglu_inversion,
     solve_adaptive_spectral_svd_deltas,
     solve_weight_deltas_least_squares,
     spectral_directional_rescale,
     swish,
     swish_prime,
+    swish_second_derivative,
 )
 from faytuna_flow.manifold_charts import (
     build_multi_chart_atlas,
@@ -92,6 +94,36 @@ def test_invert_swiglu_activations():
         rtol=0.08,
         atol=0.01,
     )
+
+
+def test_swish_second_derivative_vs_finite_differences():
+    """Verify Swish analytical second derivative matches central differences."""
+    u = np.linspace(-3.5, 3.5, 40).reshape(8, 5)
+    h = 1e-6
+    analytical = swish_second_derivative(u)
+    numerical = (swish_prime(u + h) - swish_prime(u - h)) / (2.0 * h)
+    np.testing.assert_allclose(analytical, numerical, rtol=1e-4, atol=1e-5)
+
+
+def test_iterative_gauss_newton_swiglu_inversion_error_reduction():
+    """Verify iterative Gauss-Newton inversion significantly outperforms 1-step linear inverse."""
+    rng = np.random.RandomState(42)
+    u = rng.randn(30, 24)
+    v = rng.randn(30, 24)
+    da = 0.08 * rng.randn(30, 24)
+    base = swish(u) * v
+
+    # Linear 1-step
+    du_lin, dv_lin = invert_swiglu_activations(u, v, da, newton_steps=0)
+    pred_lin = swish(u + du_lin) * (v + dv_lin)
+    err_lin = np.linalg.norm(pred_lin - base - da)
+
+    # Iterative Gauss-Newton with 2-jet curvature
+    du_gn, dv_gn = iterative_gauss_newton_swiglu_inversion(u, v, da, max_iter=5, second_order=True)
+    pred_gn = swish(u + du_gn) * (v + dv_gn)
+    err_gn = np.linalg.norm(pred_gn - base - da)
+
+    assert err_gn < err_lin * 0.50, f"GN error ({err_gn:.4f}) should be < 50% of linear ({err_lin:.4f})"
 
 
 def test_solve_weight_deltas_least_squares():
