@@ -381,6 +381,8 @@ def main() -> None:
     parser.add_argument("--distill-steps", type=int, default=0, help="Micro-distillation steps (0=disabled)")
     parser.add_argument("--output-dir", type=str, default="runs/qwen35_transfer")
     parser.add_argument("--save-model", action="store_true", help="Save transferred student model checkpoint to disk")
+    parser.add_argument("--push-to-hub", type=str, default=None, help="Hugging Face repository ID to push transferred model (e.g. 'F-Labs/Qwen3.5-0.8B-DynamicTune-Private')")
+    parser.add_argument("--hub-private", action="store_true", help="Set pushed Hugging Face repository to private")
     parser.add_argument("--use-layer-streaming", action="store_true", help="Use pipelined layer-by-layer VRAM streaming for hidden state collection")
     parser.add_argument("--prompt-source", type=str, default="default", choices=["default", "v2", "file"], help="Calibration prompt source (default=8 baseline, v2=high-rank 2-in-1 stress generator, file=custom JSON)")
     parser.add_argument("--prompt-file", type=str, default="data/calibration_prompts_v2.json", help="Path to prompt JSON if --prompt-source file")
@@ -868,6 +870,12 @@ def main() -> None:
         student.save_pretrained(save_dir)
         tokenizer.save_pretrained(save_dir)
         print("Model saved successfully.")
+
+    if args.push_to_hub:
+        print(f"\nPushing transferred model to Hugging Face Hub: {args.push_to_hub} (private={args.hub_private})...")
+        student.push_to_hub(args.push_to_hub, private=args.hub_private)
+        tokenizer.push_to_hub(args.push_to_hub, private=args.hub_private)
+        print("Model successfully pushed to Hugging Face Hub!")
 
     # Generate qualitative test output
     print("\nQualitative Generation Test:")
