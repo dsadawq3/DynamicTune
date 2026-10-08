@@ -687,12 +687,14 @@ def main() -> None:
                     f_attn = gamma_attn * flow_residual
                     f_mlp = (1.0 - gamma_attn) * flow_residual
 
-                    # 1. Attention flow surgery
+                    # 1. Attention flow surgery (output space rotation)
                     delta_w_attn = None
                     w_attn = None
                     if attn_param is not None and gamma_attn > 0:
                         w_attn = attn_param.detach().to(torch.float32).cpu().numpy()
-                        delta_w_attn_raw = solve_adaptive_spectral_svd_deltas(s_in, f_attn, energy_ratio=0.85, max_rank=128).T
+                        # Rotate output representation space in R^{d_model}: (d_model, d_model) @ (d_model, d_attn_inner)
+                        p_rot = (f_attn.T @ s_in) / (float(np.linalg.norm(s_in)**2) + 1e-4)  # (1024, 1024)
+                        delta_w_attn_raw = (p_rot @ w_attn).astype(np.float32)  # (1024, 2048)
                         delta_w_attn, scale_attn = spectral_directional_rescale(w_attn, delta_w_attn_raw, max_spectral_ratio=0.03)
 
                     # 2. MLP surgery with Gauss-Newton 2nd-order inversion
