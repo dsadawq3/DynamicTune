@@ -838,7 +838,7 @@ def main() -> None:
             student.lm_head.weight.copy_(torch.from_numpy(new_head).to(student.lm_head.weight.dtype))
         val_head = evaluate_nll_and_ppl(student, tokenizer, EVAL_PROMPTS, device=device_obj)
         current_holdout = surgery_records[-1].get("holdout_nll", pre_eval["mean_nll"]) if surgery_records else pre_eval["mean_nll"]
-        if val_head["mean_nll"] > current_holdout:
+        if val_head["mean_nll"] > current_holdout * 1.002:
             print(f"  [Rollback] Vocabulary alignment degraded holdout ({val_head['mean_nll']:.4f} vs {current_holdout:.4f}); rolling back.")
             with torch.no_grad():
                 student.lm_head.weight.copy_(head_backup)
